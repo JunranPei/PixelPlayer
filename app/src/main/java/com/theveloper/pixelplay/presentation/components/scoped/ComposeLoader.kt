@@ -82,7 +82,9 @@ fun rememberSmoothProgress(
 
         while (isActive) {
             if (!latestIsVisible) {
-                delay(200L)
+                // Hidden sampler does no work; the longer poll just bounds how
+                // soon we resume after becoming visible again.
+                delay(600L)
                 continue
             }
             val isPlaying = latestIsPlayingProvider()

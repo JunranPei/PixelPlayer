@@ -161,7 +161,7 @@ fun AnimatedPlaybackControls(
             )
             val playCorner by animateDpAsState(
                 targetValue = if (!playPauseVisualState) playPauseCornerPlaying else playPauseCornerPaused,
-                animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
+                animationSpec = PauseRestDpSpec,
                 label = "playCorner"
             )
             val playShape = AbsoluteSmoothCornerShape(
