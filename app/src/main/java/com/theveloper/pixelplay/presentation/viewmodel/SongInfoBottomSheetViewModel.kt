@@ -15,6 +15,9 @@ import com.theveloper.pixelplay.utils.AudioMetaUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 import javax.inject.Inject
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -40,8 +43,8 @@ class SongInfoBottomSheetViewModel @Inject constructor(
     )
 
     private val _audioMeta = MutableStateFlow<AudioMeta?>(null)
-    private val _resolvedArtists = MutableStateFlow<List<Artist>>(emptyList())
-    val resolvedArtists: StateFlow<List<Artist>> = _resolvedArtists.asStateFlow()
+    private val _resolvedArtists = MutableStateFlow<ImmutableList<Artist>>(persistentListOf())
+    val resolvedArtists: StateFlow<ImmutableList<Artist>> = _resolvedArtists.asStateFlow()
     private val _isPixelPlayWatchAvailable = MutableStateFlow(false)
     val isPixelPlayWatchAvailable: StateFlow<Boolean> = _isPixelPlayWatchAvailable.asStateFlow()
     private val _isWatchAvailabilityResolved = MutableStateFlow(false)
@@ -82,7 +85,7 @@ class SongInfoBottomSheetViewModel @Inject constructor(
     fun loadArtistsForSong(song: Song) {
         val refs = song.artists
         if (refs.isEmpty() || refs.size < 2) {
-            _resolvedArtists.value = emptyList()
+            _resolvedArtists.value = persistentListOf()
             return
         }
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
@@ -95,7 +98,7 @@ class SongInfoBottomSheetViewModel @Inject constructor(
             val resolved = refs.map { ref ->
                 entitiesById[ref.id]?.toArtist()
                     ?: Artist(id = ref.id, name = ref.name, songCount = 0)
-            }
+            }.toImmutableList()
             _resolvedArtists.value = resolved
         }
     }

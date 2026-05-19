@@ -440,15 +440,15 @@ class PlayerViewModel @Inject constructor(
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val currentSongArtists: StateFlow<List<Artist>> = stablePlayerState
+    val currentSongArtists: StateFlow<ImmutableList<Artist>> = stablePlayerState
         .map { it.currentSong?.id }
         .distinctUntilChanged()
         .flatMapLatest { songId ->
             val idLong = songId?.toLongOrNull()
-            if (idLong == null) flowOf(emptyList())
-            else musicRepository.getArtistsForSong(idLong)
+            if (idLong == null) flowOf(persistentListOf())
+            else musicRepository.getArtistsForSong(idLong).map { it.toImmutableList() }
         }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), persistentListOf())
 
     private val _sheetState = MutableStateFlow(PlayerSheetState.COLLAPSED)
     val sheetState: StateFlow<PlayerSheetState> = _sheetState.asStateFlow()
@@ -1238,7 +1238,7 @@ class PlayerViewModel @Inject constructor(
     // composable. Now a single collect + distinctUntilChanged batches all settings.
     // ---------------------------------------------------------------------------
     data class FullPlayerSlice(
-        val currentSongArtists: List<Artist> = emptyList(),
+        val currentSongArtists: ImmutableList<Artist> = persistentListOf(),
         val lyricsSyncOffset: Int = 0,
         val albumArtQuality: AlbumArtQuality = AlbumArtQuality.MEDIUM,
         val audioMetadata: PlaybackAudioMetadata = PlaybackAudioMetadata(),
@@ -1259,7 +1259,7 @@ class PlayerViewModel @Inject constructor(
         albumArtQuality,
         playbackAudioMetadata,
         showPlayerFileInfo
-    ) { artists: List<Artist>, syncOffset: Int, artQuality: AlbumArtQuality,
+    ) { artists: ImmutableList<Artist>, syncOffset: Int, artQuality: AlbumArtQuality,
         audioMeta: PlaybackAudioMetadata, showFileInfo: Boolean ->
         FullPlayerSlicePart1(artists, syncOffset, artQuality, audioMeta, showFileInfo)
     }
@@ -1284,7 +1284,7 @@ class PlayerViewModel @Inject constructor(
     }
 
     private data class FullPlayerSlicePart1(
-        val currentSongArtists: List<Artist>,
+        val currentSongArtists: ImmutableList<Artist>,
         val lyricsSyncOffset: Int,
         val albumArtQuality: AlbumArtQuality,
         val audioMetadata: PlaybackAudioMetadata,

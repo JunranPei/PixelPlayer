@@ -73,6 +73,15 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.ui.text.style.TextOverflow
 
+/**
+ * Shared empty color-scheme flow used as a placeholder while paged album items
+ * are still loading. Hoisted to file scope so we don't allocate a fresh
+ * MutableStateFlow on every placeholder rendering inside the LazyColumn /
+ * LazyVerticalGrid items lambda.
+ */
+private val EMPTY_ALBUM_COLOR_SCHEME_FLOW: StateFlow<ColorSchemePair?> =
+    MutableStateFlow(null)
+
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 fun LibraryAlbumsTab(
@@ -342,8 +351,13 @@ fun LibraryAlbumsTab(
                                 ) { index ->
                                     val album = albums[index]
                                     if (album != null) {
-                                        val albumSpecificColorSchemeFlow =
-                                            playerViewModel.themeStateHolder.getAlbumColorSchemeFlow(album.albumArtUriString ?: "")
+                                        val artUri = album.albumArtUriString ?: ""
+                                        // Cache the flow lookup so each scroll/recomposition does not
+                                        // re-enter ThemeStateHolder.getAlbumColorSchemeFlow (which on
+                                        // a cache miss launches a generation coroutine).
+                                        val albumSpecificColorSchemeFlow = remember(artUri) {
+                                            playerViewModel.themeStateHolder.getAlbumColorSchemeFlow(artUri)
+                                        }
                                         val rememberedOnClick = remember(album.id, onAlbumClick) {
                                             { onAlbumClick(album.id) }
                                         }
@@ -367,7 +381,7 @@ fun LibraryAlbumsTab(
                                     } else {
                                         AlbumListItem(
                                             album = Album.empty(),
-                                            albumColorSchemePairFlow = MutableStateFlow<ColorSchemePair?>(null),
+                                            albumColorSchemePairFlow = EMPTY_ALBUM_COLOR_SCHEME_FLOW,
                                             onClick = {},
                                             isLoading = true
                                         )
@@ -412,8 +426,10 @@ fun LibraryAlbumsTab(
                                 ) { index ->
                                     val album = albums[index]
                                     if (album != null) {
-                                        val albumSpecificColorSchemeFlow =
-                                            playerViewModel.themeStateHolder.getAlbumColorSchemeFlow(album.albumArtUriString ?: "")
+                                        val artUri = album.albumArtUriString ?: ""
+                                        val albumSpecificColorSchemeFlow = remember(artUri) {
+                                            playerViewModel.themeStateHolder.getAlbumColorSchemeFlow(artUri)
+                                        }
                                         val rememberedOnClick = remember(album.id, onAlbumClick) {
                                             { onAlbumClick(album.id) }
                                         }
@@ -437,7 +453,7 @@ fun LibraryAlbumsTab(
                                     } else {
                                         AlbumGridItemRedesigned(
                                             album = Album.empty(),
-                                            albumColorSchemePairFlow = MutableStateFlow<ColorSchemePair?>(null),
+                                            albumColorSchemePairFlow = EMPTY_ALBUM_COLOR_SCHEME_FLOW,
                                             onClick = {},
                                             isLoading = true
                                         )

@@ -96,11 +96,17 @@ fun LibrarySongsTab(
     var lastHandledSongSortKey by remember { mutableStateOf(sortOption.storageKey) }
     var pendingSongSortScrollReset by remember { mutableStateOf(false) }
     var songSortSawRefreshLoading by remember { mutableStateOf(false) }
-    val currentSongId by remember(playerViewModel) {
+    // Single shared playback projection. Previously each LibraryPlaybackAwareSongItem
+    // spun up its own stablePlayerState.map{}.distinctUntilChanged() collector,
+    // which meant N visible items = N upstream subscriptions checking every
+    // emission. Now there is one upstream collector here and every item receives
+    // the same LibraryPlaybackHints instance.
+    val playbackHints by remember(playerViewModel) {
         playerViewModel.stablePlayerState
-            .map { it.currentSong?.id }
+            .map { LibraryPlaybackHints(it.currentSong?.id, it.isPlaying) }
             .distinctUntilChanged()
-    }.collectAsStateWithLifecycle(initialValue = null)
+    }.collectAsStateWithLifecycle(initialValue = LibraryPlaybackHints())
+    val currentSongId = playbackHints.currentSongId
 
     // Check if list is effectively empty (based on Paging state)
     // val isListEmpty = songs.itemCount == 0 && songs.loadState.refresh is LoadState.NotLoading
@@ -346,7 +352,7 @@ fun LibrarySongsTab(
 
                                     LibraryPlaybackAwareSongItem(
                                         song = song,
-                                        playerViewModel = playerViewModel,
+                                        playbackHints = playbackHints,
                                         isSelected = isSelected,
                                         //albumArtSize = 46.dp,
                                         isSelectionMode = isSelectionMode,

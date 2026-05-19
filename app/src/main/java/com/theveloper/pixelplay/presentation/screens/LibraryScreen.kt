@@ -468,10 +468,14 @@ fun LibraryScreen(
     val compactInitialPage = remember(tabCount, normalizedLastTabIndex) {
         infinitePagerInitialPage(tabCount, normalizedLastTabIndex)
     }
-    val pagerState = if (isCompactNavigation) {
-        rememberPagerState(initialPage = compactInitialPage) { Int.MAX_VALUE }
-    } else {
-        rememberPagerState(initialPage = normalizedLastTabIndex) { tabCount }
+    // Single rememberPagerState call instead of a conditional remember anti-pattern
+    // (the previous if/else allocated separate slots on each branch and lost scroll
+    // state when libraryNavigationMode toggled between COMPACT_PILL and the full
+    // tab strip). initialPage is captured once; pageCount is a lambda that re-reads
+    // the mode on every measure pass.
+    val pagerInitialPage = if (isCompactNavigation) compactInitialPage else normalizedLastTabIndex
+    val pagerState = rememberPagerState(initialPage = pagerInitialPage) {
+        if (isCompactNavigation) Int.MAX_VALUE else tabCount
     }
     val currentTabIndex by remember(pagerState, tabTitles, isCompactNavigation) {
         derivedStateOf {
@@ -543,6 +547,14 @@ fun LibraryScreen(
 
     val onSongSelectionToggle: (Song) -> Unit = remember(multiSelectionState) {
         { song -> multiSelectionState.toggleSelection(song) }
+    }
+
+    // Bound method reference hoisted via remember so it is referentially stable
+    // across recompositions. Without this, each render passes a fresh lambda
+    // identity into LibrarySongsTab / LibraryFavoritesTab / LibraryFoldersTab,
+    // breaking parameter stability on those composables.
+    val getSelectionIndex: (String) -> Int? = remember(multiSelectionState) {
+        multiSelectionState::getSelectionIndex
     }
 
     val toggleAlbumSelection: (Album) -> Unit = remember(selectedAlbums, playerViewModel, context) {
@@ -816,17 +828,21 @@ fun LibraryScreen(
         }
     }
 
-    val gradientColorsDark = listOf(
-        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-        Color.Transparent
-    ).toImmutableList()
-
-    val gradientColorsLight = listOf(
-        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f),
-        Color.Transparent
-    ).toImmutableList()
-
-    val gradientColors = if (dm) gradientColorsDark else gradientColorsLight
+    val gradientPrimary = MaterialTheme.colorScheme.primaryContainer
+    val gradientOnPrimary = MaterialTheme.colorScheme.onPrimaryContainer
+    val gradientColors = remember(dm, gradientPrimary, gradientOnPrimary) {
+        if (dm) {
+            persistentListOf(
+                gradientPrimary.copy(alpha = 0.5f),
+                Color.Transparent
+            )
+        } else {
+            persistentListOf(
+                gradientOnPrimary.copy(alpha = 0.2f),
+                Color.Transparent
+            )
+        }
+    }
 
     val gradientBrush = remember(gradientColors) {
         Brush.verticalGradient(colors = gradientColors)
@@ -1526,7 +1542,7 @@ fun LibraryScreen(
                                             selectedSongIds = selectedSongIds,
                                             onSongLongPress = onSongLongPress,
                                             onSongSelectionToggle = onSongSelectionToggle,
-                                            getSelectionIndex = playerViewModel.multiSelectionStateHolder::getSelectionIndex,
+                                            getSelectionIndex = getSelectionIndex,
                                             onLocateCurrentSongVisibilityChanged = { songsShowLocateButton = it },
                                             onRegisterLocateCurrentSongAction = { songsLocateAction = it },
                                             sortOption = playerUiState.currentSongSortOption,
@@ -1618,7 +1634,7 @@ fun LibraryScreen(
                                             selectedSongIds = selectedSongIds,
                                             onSongLongPress = onSongLongPress,
                                             onSongSelectionToggle = onSongSelectionToggle,
-                                            getSelectionIndex = playerViewModel.multiSelectionStateHolder::getSelectionIndex,
+                                            getSelectionIndex = getSelectionIndex,
                                             sortOption = playerUiState.currentFavoriteSortOption,
                                             onLocateCurrentSongVisibilityChanged = { likedShowLocateButton = it },
                                             onRegisterLocateCurrentSongAction = { likedLocateAction = it },
@@ -1667,7 +1683,7 @@ fun LibraryScreen(
                                             selectedSongIds = selectedSongIds,
                                             onSongLongPress = onSongLongPress,
                                             onSongSelectionToggle = onSongSelectionToggle,
-                                            getSelectionIndex = playerViewModel.multiSelectionStateHolder::getSelectionIndex,
+                                            getSelectionIndex = getSelectionIndex,
                                             onLocateCurrentSongVisibilityChanged = { foldersShowLocateButton = it },
                                             onRegisterLocateCurrentSongAction = { foldersLocateAction = it },
                                             pendingLocatePath = pendingFoldersLocatePath,
@@ -2873,17 +2889,21 @@ fun LibraryFoldersTab(
         val isRoot = targetPath == FOLDER_NAVIGATION_ROOT_KEY
         val activeFolder = if (isRoot) null else currentFolder
         val showPlaylistCards = playlistMode && activeFolder == null
-        val itemsToShow = remember(activeFolder, folders, flattenedFolders, currentSortOption) {
+        // .toImmutableList() runs inside the remember block so it doesn't
+        // re-allocate the persistent list on every recomposition. showPlaylistCards
+        // is added to the key list because it factors playlistMode in, which the
+        // previous key set was missing.
+        val itemsToShow = remember(showPlaylistCards, activeFolder, folders, flattenedFolders, currentSortOption) {
             when {
                 showPlaylistCards -> flattenedFolders
                 activeFolder != null -> sortMusicFoldersByOption(activeFolder.subFolders, currentSortOption)
                 else -> sortMusicFoldersByOption(folders, currentSortOption)
-            }
-        }.toImmutableList()
+            }.toImmutableList()
+        }
 
         val songsToShow = remember(activeFolder, currentSortOption) {
-            sortSongsForFolderView(activeFolder?.songs ?: emptyList(), currentSortOption)
-        }.toImmutableList()
+            sortSongsForFolderView(activeFolder?.songs ?: emptyList(), currentSortOption).toImmutableList()
+        }
         val currentSong = stablePlayerState.currentSong
         val currentSongId = currentSong?.id
         val currentSongIndexInSongs = remember(songsToShow, currentSongId) {
