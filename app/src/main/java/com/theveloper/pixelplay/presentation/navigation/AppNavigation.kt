@@ -60,6 +60,7 @@ import com.theveloper.pixelplay.presentation.viewmodel.PlayerViewModel
 import com.theveloper.pixelplay.presentation.viewmodel.PlaylistViewModel
 import kotlinx.coroutines.flow.first
 import com.theveloper.pixelplay.presentation.components.ScreenWrapper
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(UnstableApi::class)
 @SuppressLint("UnrememberedGetBackStackEntry")
@@ -74,6 +75,18 @@ fun AppNavigation(
 ) {
     var startDestination by remember { mutableStateOf<String?>(null) }
 
+    val reduceAnimations by remember {
+        userPreferencesRepository.reduceAnimationsFlow
+    }.collectAsStateWithLifecycle(initialValue = false)
+
+    val animationSpeedScaleStr by remember {
+        userPreferencesRepository.animationSpeedScaleFlow
+    }.collectAsStateWithLifecycle(initialValue = "1.0")
+
+    val animationSpeedScale = remember(animationSpeedScaleStr) {
+        animationSpeedScaleStr.toFloatOrNull() ?: 1.0f
+    }
+
     LaunchedEffect(Unit) {
         startDestination = userPreferencesRepository.launchTabFlow
             .first()
@@ -83,7 +96,11 @@ fun AppNavigation(
     startDestination?.let { initialRoute ->
         NavHost(
             navController = navController,
-            startDestination = initialRoute
+            startDestination = initialRoute,
+            enterTransition = { enterTransition(animationSpeedScale, reduceAnimations) },
+            exitTransition = { exitTransition(animationSpeedScale, reduceAnimations) },
+            popEnterTransition = { popEnterTransition(animationSpeedScale, reduceAnimations) },
+            popExitTransition = { popExitTransition(animationSpeedScale, reduceAnimations) }
         ) {
             composable(
                 Screen.Home.route,
@@ -91,28 +108,36 @@ fun AppNavigation(
                     mainRootEnterTransition(
                         fromRoute = initialState.destination.route,
                         toRoute = targetState.destination.route,
-                        fallback = enterTransition()
+                        fallback = enterTransition(animationSpeedScale, reduceAnimations),
+                        scale = animationSpeedScale,
+                        reduceAnimations = reduceAnimations
                     )
                 },
                 exitTransition = {
                     mainRootExitTransition(
                         fromRoute = initialState.destination.route,
                         toRoute = targetState.destination.route,
-                        fallback = exitTransition()
+                        fallback = exitTransition(animationSpeedScale, reduceAnimations),
+                        scale = animationSpeedScale,
+                        reduceAnimations = reduceAnimations
                     )
                 },
                 popEnterTransition = {
                     mainRootEnterTransition(
                         fromRoute = initialState.destination.route,
                         toRoute = targetState.destination.route,
-                        fallback = popEnterTransition()
+                        fallback = popEnterTransition(animationSpeedScale, reduceAnimations),
+                        scale = animationSpeedScale,
+                        reduceAnimations = reduceAnimations
                     )
                 },
                 popExitTransition = {
                     mainRootExitTransition(
                         fromRoute = initialState.destination.route,
                         toRoute = targetState.destination.route,
-                        fallback = popExitTransition()
+                        fallback = popExitTransition(animationSpeedScale, reduceAnimations),
+                        scale = animationSpeedScale,
+                        reduceAnimations = reduceAnimations
                     )
                 },
             ) {
@@ -131,28 +156,36 @@ fun AppNavigation(
                     mainRootEnterTransition(
                         fromRoute = initialState.destination.route,
                         toRoute = targetState.destination.route,
-                        fallback = enterTransition()
+                        fallback = enterTransition(animationSpeedScale, reduceAnimations),
+                        scale = animationSpeedScale,
+                        reduceAnimations = reduceAnimations
                     )
                 },
                 exitTransition = {
                     mainRootExitTransition(
                         fromRoute = initialState.destination.route,
                         toRoute = targetState.destination.route,
-                        fallback = exitTransition()
+                        fallback = exitTransition(animationSpeedScale, reduceAnimations),
+                        scale = animationSpeedScale,
+                        reduceAnimations = reduceAnimations
                     )
                 },
                 popEnterTransition = {
                     mainRootEnterTransition(
                         fromRoute = initialState.destination.route,
                         toRoute = targetState.destination.route,
-                        fallback = popEnterTransition()
+                        fallback = popEnterTransition(animationSpeedScale, reduceAnimations),
+                        scale = animationSpeedScale,
+                        reduceAnimations = reduceAnimations
                     )
                 },
                 popExitTransition = {
                     mainRootExitTransition(
                         fromRoute = initialState.destination.route,
                         toRoute = targetState.destination.route,
-                        fallback = popExitTransition()
+                        fallback = popExitTransition(animationSpeedScale, reduceAnimations),
+                        scale = animationSpeedScale,
+                        reduceAnimations = reduceAnimations
                     )
                 },
             ) {
@@ -171,28 +204,36 @@ fun AppNavigation(
                     mainRootEnterTransition(
                         fromRoute = initialState.destination.route,
                         toRoute = targetState.destination.route,
-                        fallback = enterTransition()
+                        fallback = enterTransition(animationSpeedScale, reduceAnimations),
+                        scale = animationSpeedScale,
+                        reduceAnimations = reduceAnimations
                     )
                 },
                 exitTransition = {
                     mainRootExitTransition(
                         fromRoute = initialState.destination.route,
                         toRoute = targetState.destination.route,
-                        fallback = exitTransition()
+                        fallback = exitTransition(animationSpeedScale, reduceAnimations),
+                        scale = animationSpeedScale,
+                        reduceAnimations = reduceAnimations
                     )
                 },
                 popEnterTransition = {
                     mainRootEnterTransition(
                         fromRoute = initialState.destination.route,
                         toRoute = targetState.destination.route,
-                        fallback = popEnterTransition()
+                        fallback = popEnterTransition(animationSpeedScale, reduceAnimations),
+                        scale = animationSpeedScale,
+                        reduceAnimations = reduceAnimations
                     )
                 },
                 popExitTransition = {
                     mainRootExitTransition(
                         fromRoute = initialState.destination.route,
                         toRoute = targetState.destination.route,
-                        fallback = popExitTransition()
+                        fallback = popExitTransition(animationSpeedScale, reduceAnimations),
+                        scale = animationSpeedScale,
+                        reduceAnimations = reduceAnimations
                     )
                 },
             ) {
@@ -202,10 +243,6 @@ fun AppNavigation(
             }
             composable(
                 Screen.Settings.route,
-                enterTransition = { enterTransition() },
-                exitTransition = { exitTransition() },
-                popEnterTransition = { popEnterTransition() },
-                popExitTransition = { popExitTransition() },
             ) {
                 ScreenWrapper(navController = navController, playerViewModel = playerViewModel) {
                     SettingsScreen(
@@ -219,10 +256,6 @@ fun AppNavigation(
             }
             composable(
                 Screen.Accounts.route,
-                enterTransition = { enterTransition() },
-                exitTransition = { exitTransition() },
-                popEnterTransition = { popEnterTransition() },
-                popExitTransition = { popExitTransition() },
             ) {
                 ScreenWrapper(navController = navController, playerViewModel = playerViewModel) {
                     AccountsScreen(
@@ -245,10 +278,6 @@ fun AppNavigation(
             composable(
                 route = Screen.SettingsCategory.route,
                 arguments = listOf(navArgument("categoryId") { type = NavType.StringType }),
-                enterTransition = { enterTransition() },
-                exitTransition = { exitTransition() },
-                popEnterTransition = { popEnterTransition() },
-                popExitTransition = { popExitTransition() },
             ) { backStackEntry ->
                 ScreenWrapper(navController = navController, playerViewModel = playerViewModel) {
                     val categoryId = backStackEntry.arguments?.getString("categoryId")
@@ -264,10 +293,6 @@ fun AppNavigation(
             }
             composable(
                 Screen.PaletteStyle.route,
-                enterTransition = { enterTransition() },
-                exitTransition = { exitTransition() },
-                popEnterTransition = { popEnterTransition() },
-                popExitTransition = { popExitTransition() },
             ) {
                 ScreenWrapper(navController = navController, playerViewModel = playerViewModel) {
                     PaletteStyleSettingsScreen(
@@ -278,10 +303,6 @@ fun AppNavigation(
             }
             composable(
                 Screen.Experimental.route,
-                enterTransition = { enterTransition() },
-                exitTransition = { exitTransition() },
-                popEnterTransition = { popEnterTransition() },
-                popExitTransition = { popExitTransition() },
             ) {
                 ScreenWrapper(navController = navController, playerViewModel = playerViewModel) {
                     ExperimentalSettingsScreen(
@@ -293,10 +314,6 @@ fun AppNavigation(
             }
             composable(
                 Screen.DailyMixScreen.route,
-                enterTransition = { enterTransition() },
-                exitTransition = { exitTransition() },
-                popEnterTransition = { popEnterTransition() },
-                popExitTransition = { popExitTransition() },
             ) {
                 ScreenWrapper(navController = navController, playerViewModel = playerViewModel) {
                     DailyMixScreen(
@@ -307,10 +324,6 @@ fun AppNavigation(
             }
             composable(
                 Screen.RecentlyPlayed.route,
-                enterTransition = { enterTransition() },
-                exitTransition = { exitTransition() },
-                popEnterTransition = { popEnterTransition() },
-                popExitTransition = { popExitTransition() },
             ) {
                 ScreenWrapper(navController = navController, playerViewModel = playerViewModel) {
                     RecentlyPlayedScreen(
@@ -321,10 +334,6 @@ fun AppNavigation(
             }
             composable(
                 Screen.Stats.route,
-                enterTransition = { enterTransition() },
-                exitTransition = { exitTransition() },
-                popEnterTransition = { popEnterTransition() },
-                popExitTransition = { popExitTransition() },
             ) {
                 ScreenWrapper(navController = navController, playerViewModel = playerViewModel) {
                     StatsScreen(
@@ -335,10 +344,6 @@ fun AppNavigation(
             composable(
                 route = Screen.PlaylistDetail.route,
                 arguments = listOf(navArgument("playlistId") { type = NavType.StringType }),
-                enterTransition = { enterTransition() },
-                exitTransition = { exitTransition() },
-                popEnterTransition = { popEnterTransition() },
-                popExitTransition = { popExitTransition() },
             ) { backStackEntry ->
                 val playlistId = backStackEntry.arguments?.getString("playlistId")
                 val playlistViewModel: PlaylistViewModel = hiltViewModel()
@@ -358,10 +363,6 @@ fun AppNavigation(
 
             composable(
                 Screen.DJSpace.route,
-                enterTransition = { enterTransition() },
-                exitTransition = { exitTransition() },
-                popEnterTransition = { popEnterTransition() },
-                popExitTransition = { popExitTransition() },
             ) {
                 ScreenWrapper(navController = navController, playerViewModel = playerViewModel) {
                     MashupScreen()
@@ -370,10 +371,6 @@ fun AppNavigation(
             composable(
                 route = Screen.GenreDetail.route,
                 arguments = listOf(navArgument("genreId") { type = NavType.StringType }),
-                enterTransition = { enterTransition() },
-                exitTransition = { exitTransition() },
-                popEnterTransition = { popEnterTransition() },
-                popExitTransition = { popExitTransition() },
             ) { backStackEntry ->
                 val genreId = backStackEntry.arguments?.getString("genreId")
                 if (genreId != null) {
@@ -391,10 +388,6 @@ fun AppNavigation(
             composable(
                 route = Screen.AlbumDetail.route,
                 arguments = listOf(navArgument("albumId") { type = NavType.StringType }),
-                enterTransition = { enterTransition() },
-                exitTransition = { exitTransition() },
-                popEnterTransition = { popEnterTransition() },
-                popExitTransition = { popExitTransition() },
             ) { backStackEntry ->
                 val albumId = backStackEntry.arguments?.getString("albumId")
                 if (albumId != null) {
@@ -410,10 +403,6 @@ fun AppNavigation(
             composable(
                 route = Screen.ArtistDetail.route,
                 arguments = listOf(navArgument("artistId") { type = NavType.StringType }),
-                enterTransition = { enterTransition() },
-                exitTransition = { exitTransition() },
-                popEnterTransition = { popEnterTransition() },
-                popExitTransition = { popExitTransition() },
             ) { backStackEntry ->
                 val artistId = backStackEntry.arguments?.getString("artistId")
                 if (artistId != null) {
@@ -428,10 +417,6 @@ fun AppNavigation(
             }
             composable(
                 "nav_bar_corner_radius",
-                enterTransition = { enterTransition() },
-                exitTransition = { exitTransition() },
-                popEnterTransition = { popEnterTransition() },
-                popExitTransition = { popExitTransition() },
             ) {
                 ScreenWrapper(navController = navController, playerViewModel = playerViewModel) {
                     NavBarCornerRadiusScreen(navController)
@@ -443,10 +428,6 @@ fun AppNavigation(
                     type = NavType.StringType
                     nullable = true
                 }),
-                enterTransition = { enterTransition() },
-                exitTransition = { exitTransition() },
-                popEnterTransition = { popEnterTransition() },
-                popExitTransition = { popExitTransition() },
             ) {
                 ScreenWrapper(navController = navController, playerViewModel = playerViewModel) {
                     EditTransitionScreen(navController = navController)
@@ -454,10 +435,6 @@ fun AppNavigation(
             }
             composable(
                 Screen.About.route,
-                enterTransition = { enterTransition() },
-                exitTransition = { exitTransition() },
-                popEnterTransition = { popEnterTransition() },
-                popExitTransition = { popExitTransition() },
             ) {
                 ScreenWrapper(navController = navController, playerViewModel = playerViewModel) {
                     AboutScreen(
@@ -469,10 +446,6 @@ fun AppNavigation(
             }
             composable(
                 Screen.EasterEgg.route,
-                enterTransition = { enterTransition() },
-                exitTransition = { exitTransition() },
-                popEnterTransition = { popEnterTransition() },
-                popExitTransition = { popExitTransition() },
             ) {
                 ScreenWrapper(navController = navController, playerViewModel = playerViewModel) {
                     EasterEggScreen(
@@ -483,10 +456,6 @@ fun AppNavigation(
             }
             composable(
                 Screen.ArtistSettings.route,
-                enterTransition = { enterTransition() },
-                exitTransition = { exitTransition() },
-                popEnterTransition = { popEnterTransition() },
-                popExitTransition = { popExitTransition() },
             ) {
                 ScreenWrapper(navController = navController, playerViewModel = playerViewModel) {
                     ArtistSettingsScreen(navController = navController)
@@ -494,10 +463,6 @@ fun AppNavigation(
             }
             composable(
                 Screen.DelimiterConfig.route,
-                enterTransition = { enterTransition() },
-                exitTransition = { exitTransition() },
-                popEnterTransition = { popEnterTransition() },
-                popExitTransition = { popExitTransition() },
             ) {
                 ScreenWrapper(navController = navController, playerViewModel = playerViewModel) {
                     DelimiterConfigScreen(navController = navController)
@@ -505,10 +470,6 @@ fun AppNavigation(
             }
             composable(
                 Screen.WordDelimiterConfig.route,
-                enterTransition = { enterTransition() },
-                exitTransition = { exitTransition() },
-                popEnterTransition = { popEnterTransition() },
-                popExitTransition = { popExitTransition() },
             ) {
                 ScreenWrapper(navController = navController, playerViewModel = playerViewModel) {
                     WordDelimiterConfigScreen(navController = navController)
@@ -516,10 +477,6 @@ fun AppNavigation(
             }
             composable(
                 Screen.Equalizer.route,
-                enterTransition = { enterTransition() },
-                exitTransition = { exitTransition() },
-                popEnterTransition = { popEnterTransition() },
-                popExitTransition = { popExitTransition() },
             ) {
                 ScreenWrapper(navController = navController, playerViewModel = playerViewModel) {
                     EqualizerScreen(
@@ -530,10 +487,6 @@ fun AppNavigation(
             }
             composable(
                 Screen.DeviceCapabilities.route,
-                enterTransition = { enterTransition() },
-                exitTransition = { exitTransition() },
-                popEnterTransition = { popEnterTransition() },
-                popExitTransition = { popExitTransition() },
             ) {
                 ScreenWrapper(navController = navController, playerViewModel = playerViewModel) {
                     com.theveloper.pixelplay.presentation.screens.DeviceCapabilitiesScreen(
@@ -544,10 +497,6 @@ fun AppNavigation(
             }
             composable(
                 Screen.NeteaseDashboard.route,
-                enterTransition = { enterTransition() },
-                exitTransition = { exitTransition() },
-                popEnterTransition = { popEnterTransition() },
-                popExitTransition = { popExitTransition() },
             ) {
                 ScreenWrapper(navController = navController, playerViewModel = playerViewModel) {
                     com.theveloper.pixelplay.presentation.netease.dashboard.NeteaseDashboardScreen(
@@ -557,10 +506,6 @@ fun AppNavigation(
             }
             composable(
                 Screen.QqMusicDashboard.route,
-                enterTransition = { enterTransition() },
-                exitTransition = { exitTransition() },
-                popEnterTransition = { popEnterTransition() },
-                popExitTransition = { popExitTransition() },
             ) {
                 ScreenWrapper(navController = navController, playerViewModel = playerViewModel) {
                     com.theveloper.pixelplay.presentation.qqmusic.dashboard.QqMusicDashboardScreen(
@@ -570,10 +515,6 @@ fun AppNavigation(
             }
             composable(
                 Screen.NavidromeDashboard.route,
-                enterTransition = { enterTransition() },
-                exitTransition = { exitTransition() },
-                popEnterTransition = { popEnterTransition() },
-                popExitTransition = { popExitTransition() },
             ) {
                 ScreenWrapper(navController = navController, playerViewModel = playerViewModel) {
                     com.theveloper.pixelplay.presentation.navidrome.dashboard.NavidromeDashboardScreen(
@@ -583,10 +524,6 @@ fun AppNavigation(
             }
             composable(
                 Screen.JellyfinDashboard.route,
-                enterTransition = { enterTransition() },
-                exitTransition = { exitTransition() },
-                popEnterTransition = { popEnterTransition() },
-                popExitTransition = { popExitTransition() },
             ) {
                 ScreenWrapper(navController = navController, playerViewModel = playerViewModel) {
                     com.theveloper.pixelplay.presentation.jellyfin.dashboard.JellyfinDashboardScreen(
@@ -634,39 +571,61 @@ private fun mainRootDirection(
 private fun mainRootEnterTransition(
     fromRoute: String?,
     toRoute: String?,
-    fallback: EnterTransition
-): EnterTransition = when (mainRootDirection(fromRoute, toRoute)) {
-    MainRootDirection.FORWARD -> {
-        slideInHorizontally(
-            animationSpec = MAIN_ROOT_TRANSITION_SPEC,
-            initialOffsetX = { (it * 0.5f).toInt() }
-        ) + fadeIn(animationSpec = MAIN_ROOT_FADE_SPEC)
+    fallback: EnterTransition,
+    scale: Float = 1.0f,
+    reduceAnimations: Boolean = false
+): EnterTransition {
+    if (reduceAnimations || scale <= 0f) return EnterTransition.None
+    return when (mainRootDirection(fromRoute, toRoute)) {
+        MainRootDirection.FORWARD -> {
+            val duration = (BOTTOM_NAV_TRANSITION_DURATION * scale).toInt()
+            val spec = tween<IntOffset>(durationMillis = duration, easing = BottomNavEasing)
+            val fadeSpec = tween<Float>(durationMillis = duration / 2, easing = BottomNavEasing)
+            slideInHorizontally(
+                animationSpec = spec,
+                initialOffsetX = { (it * 0.15f).toInt() }
+            ) + fadeIn(animationSpec = fadeSpec)
+        }
+        MainRootDirection.BACKWARD -> {
+            val duration = (BOTTOM_NAV_TRANSITION_DURATION * scale).toInt()
+            val spec = tween<IntOffset>(durationMillis = duration, easing = BottomNavEasing)
+            val fadeSpec = tween<Float>(durationMillis = duration / 2, easing = BottomNavEasing)
+            slideInHorizontally(
+                animationSpec = spec,
+                initialOffsetX = { -(it * 0.15f).toInt() }
+            ) + fadeIn(animationSpec = fadeSpec)
+        }
+        null -> fallback
     }
-    MainRootDirection.BACKWARD -> {
-        slideInHorizontally(
-            animationSpec = MAIN_ROOT_TRANSITION_SPEC,
-            initialOffsetX = { -(it * 0.5f).toInt() }
-        ) + fadeIn(animationSpec = MAIN_ROOT_FADE_SPEC)
-    }
-    null -> fallback
 }
 
 private fun mainRootExitTransition(
     fromRoute: String?,
     toRoute: String?,
-    fallback: ExitTransition
-): ExitTransition = when (mainRootDirection(fromRoute, toRoute)) {
-    MainRootDirection.FORWARD -> {
-        slideOutHorizontally(
-            animationSpec = MAIN_ROOT_TRANSITION_SPEC,
-            targetOffsetX = { -(it * 0.5f).toInt() }
-        ) + fadeOut(animationSpec = MAIN_ROOT_FADE_SPEC)
+    fallback: ExitTransition,
+    scale: Float = 1.0f,
+    reduceAnimations: Boolean = false
+): ExitTransition {
+    if (reduceAnimations || scale <= 0f) return ExitTransition.None
+    return when (mainRootDirection(fromRoute, toRoute)) {
+        MainRootDirection.FORWARD -> {
+            val duration = (BOTTOM_NAV_TRANSITION_DURATION * scale).toInt()
+            val spec = tween<IntOffset>(durationMillis = duration, easing = BottomNavEasing)
+            val fadeSpec = tween<Float>(durationMillis = duration / 2, easing = BottomNavEasing)
+            slideOutHorizontally(
+                animationSpec = spec,
+                targetOffsetX = { -(it * 0.15f).toInt() }
+            ) + fadeOut(animationSpec = fadeSpec)
+        }
+        MainRootDirection.BACKWARD -> {
+            val duration = (BOTTOM_NAV_TRANSITION_DURATION * scale).toInt()
+            val spec = tween<IntOffset>(durationMillis = duration, easing = BottomNavEasing)
+            val fadeSpec = tween<Float>(durationMillis = duration / 2, easing = BottomNavEasing)
+            slideOutHorizontally(
+                animationSpec = spec,
+                targetOffsetX = { (it * 0.15f).toInt() }
+            ) + fadeOut(animationSpec = fadeSpec)
+        }
+        null -> fallback
     }
-    MainRootDirection.BACKWARD -> {
-        slideOutHorizontally(
-            animationSpec = MAIN_ROOT_TRANSITION_SPEC,
-            targetOffsetX = { (it * 0.5f).toInt() }
-        ) + fadeOut(animationSpec = MAIN_ROOT_FADE_SPEC)
-    }
-    null -> fallback
 }

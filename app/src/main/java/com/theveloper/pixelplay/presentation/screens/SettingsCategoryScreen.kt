@@ -73,6 +73,8 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Style
 import androidx.compose.material.icons.outlined.Warning
+import androidx.compose.material.icons.outlined.FlashOn
+import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ChevronRight
@@ -551,6 +553,36 @@ fun SettingsCategoryScreen(
                                     checked = useSmoothCorners,
                                     onCheckedChange = settingsViewModel::setUseSmoothCorners,
                                     leadingIcon = { Icon(painterResource(R.drawable.rounded_rounded_corner_24), null, tint = MaterialTheme.colorScheme.secondary) }
+                                )
+                            }
+
+                            SettingsSubsection(title = stringResource(R.string.setcat_performance_transitions)) {
+                                SwitchSettingItem(
+                                    title = stringResource(R.string.setcat_reduce_animations_title),
+                                    subtitle = stringResource(R.string.setcat_reduce_animations_subtitle),
+                                    checked = uiState.reduceAnimations,
+                                    onCheckedChange = { settingsViewModel.setReduceAnimations(it) },
+                                    leadingIcon = { Icon(Icons.Outlined.FlashOn, null, tint = MaterialTheme.colorScheme.secondary) }
+                                )
+                                SwitchSettingItem(
+                                    title = stringResource(R.string.setcat_enable_background_blur_title),
+                                    subtitle = stringResource(R.string.setcat_enable_background_blur_subtitle),
+                                    checked = uiState.backgroundBlurEnabled,
+                                    onCheckedChange = { settingsViewModel.setBackgroundBlurEnabled(it) },
+                                    leadingIcon = { Icon(Icons.Outlined.Style, null, tint = MaterialTheme.colorScheme.secondary) }
+                                )
+                                ThemeSelectorItem(
+                                    label = stringResource(R.string.setcat_animation_speed_title),
+                                    description = stringResource(R.string.setcat_animation_speed_subtitle),
+                                    options = mapOf(
+                                        "0.0" to stringResource(R.string.setcat_animation_speed_disabled),
+                                        "0.5" to stringResource(R.string.setcat_animation_speed_fast),
+                                        "1.0" to stringResource(R.string.setcat_animation_speed_normal),
+                                        "2.0" to stringResource(R.string.setcat_animation_speed_slow)
+                                    ),
+                                    selectedKey = uiState.animationSpeedScale,
+                                    onSelectionChanged = { settingsViewModel.setAnimationSpeedScale(it) },
+                                    leadingIcon = { Icon(Icons.Outlined.Speed, null, tint = MaterialTheme.colorScheme.secondary) }
                                 )
                             }
 

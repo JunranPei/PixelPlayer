@@ -83,6 +83,19 @@
     <string name="setcat_theme_follow_system">Follow System</string>
     <string name="setcat_smooth_corners_title">Use Smooth Corners</string>
     <string name="setcat_smooth_corners_subtitle">Use complex shaped corners effectively improving aesthetics but may affect performance on low-end devices</string>
+
+    <!-- Performance & Transitions settings -->
+    <string name="setcat_performance_transitions">Performance &amp; Transitions</string>
+    <string name="setcat_reduce_animations_title">Reduce Animations</string>
+    <string name="setcat_reduce_animations_subtitle">Disable intense animations and transitions to improve responsiveness on low-end devices.</string>
+    <string name="setcat_enable_background_blur_title">Background Blur</string>
+    <string name="setcat_enable_background_blur_subtitle">Enable translucent background blurring effect under sliding panels.</string>
+    <string name="setcat_animation_speed_title">Animation Speed</string>
+    <string name="setcat_animation_speed_subtitle">Choose the speed of screen transitions and sliding panels.</string>
+    <string name="setcat_animation_speed_disabled">Reduced (Instant)</string>
+    <string name="setcat_animation_speed_fast">Fast (0.5x)</string>
+    <string name="setcat_animation_speed_normal">Normal (1.0x)</string>
+    <string name="setcat_animation_speed_slow">Slow (2.0x)</string>
     <string name="setcat_now_playing">Now Playing</string>
     <string name="setcat_player_theme_label">Player Theme</string>
     <string name="setcat_player_theme_desc">Choose the appearance for the floating player.</string>

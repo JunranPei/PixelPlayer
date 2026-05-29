@@ -915,6 +915,14 @@ class MainActivity : ComponentActivity() {
                             derivedStateOf { currentRoute in routesWithHiddenMiniPlayer }
                         }
 
+                        val reduceAnimations by remember {
+                            userPreferencesRepository.reduceAnimationsFlow
+                        }.collectAsStateWithLifecycle(initialValue = false)
+
+                        val backgroundBlurEnabled by remember {
+                            userPreferencesRepository.backgroundBlurEnabledFlow
+                        }.collectAsStateWithLifecycle(initialValue = true)
+
                         val miniPlayerH = with(density) { MiniPlayerHeight.toPx() }
                         val totalSheetHeightWhenContentCollapsedPx = if (showPlayerContentInitially && !shouldHideMiniPlayer) miniPlayerH else 0f
 
@@ -939,15 +947,20 @@ class MainActivity : ComponentActivity() {
                                 .graphicsLayer {
                                     val fraction = expansionFractionProvider()
                                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                        val blurPx = fraction * 100f // 40px target blur at 100% expanded
-                                        if (blurPx > 0f) {
-                                            renderEffect = AndroidRenderEffect.createBlurEffect(
-                                                blurPx,
-                                                blurPx,
-                                                AndroidShader.TileMode.CLAMP
-                                            ).asComposeRenderEffect()
-                                        } else {
+                                        if (!backgroundBlurEnabled) {
                                             renderEffect = null
+                                        } else {
+                                            val discreteFraction = (fraction * 25).toInt().toFloat() / 25f
+                                            val blurPx = discreteFraction * 100f // 100px target blur at 100% expanded
+                                            if (blurPx > 0f) {
+                                                renderEffect = AndroidRenderEffect.createBlurEffect(
+                                                    blurPx,
+                                                    blurPx,
+                                                    AndroidShader.TileMode.CLAMP
+                                                ).asComposeRenderEffect()
+                                            } else {
+                                                renderEffect = null
+                                            }
                                         }
                                     }
                                 }

@@ -698,6 +698,27 @@ class PlayerViewModel @Inject constructor(
             initialValue = true
         )
 
+    val reduceAnimations: StateFlow<Boolean> = userPreferencesRepository.reduceAnimationsFlow
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
+
+    val animationSpeedScale: StateFlow<String> = userPreferencesRepository.animationSpeedScaleFlow
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = "1.0"
+        )
+
+    val backgroundBlurEnabled: StateFlow<Boolean> = userPreferencesRepository.backgroundBlurEnabledFlow
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = true
+        )
+
 
 
     private val _isInitialThemePreloadComplete = MutableStateFlow(false)
@@ -1440,7 +1461,10 @@ class PlayerViewModel @Inject constructor(
         val fullPlayerLoadingTweaks: FullPlayerLoadingTweaks = FullPlayerLoadingTweaks(),
         val tapBackgroundClosesPlayer: Boolean = false,
         val useSmoothCorners: Boolean = true,
-        val playerThemePreference: String = ThemePreference.ALBUM_ART
+        val playerThemePreference: String = ThemePreference.ALBUM_ART,
+        val reduceAnimations: Boolean = false,
+        val animationSpeedScale: String = "1.0",
+        val backgroundBlurEnabled: Boolean = true
     )
 
     private val playerConfigSlicePart1 = combine(
@@ -1461,19 +1485,39 @@ class PlayerViewModel @Inject constructor(
         val tapBackgroundClosesPlayer: Boolean
     )
 
+    private val playerConfigSlicePart2 = combine(
+        useSmoothCorners,
+        playerThemePreference,
+        reduceAnimations,
+        animationSpeedScale,
+        backgroundBlurEnabled
+    ) { smoothCorners, themePref, redAnims, speedScale, blurEnabled ->
+        PlayerConfigSlicePart2(smoothCorners, themePref, redAnims, speedScale, blurEnabled)
+    }
+
+    private data class PlayerConfigSlicePart2(
+        val useSmoothCorners: Boolean,
+        val playerThemePreference: String,
+        val reduceAnimations: Boolean,
+        val animationSpeedScale: String,
+        val backgroundBlurEnabled: Boolean
+    )
+
     val playerConfigSlice: StateFlow<PlayerConfigSlice> = combine(
         playerConfigSlicePart1,
-        useSmoothCorners,
-        playerThemePreference
-    ) { p1, smoothCorners, themePref ->
+        playerConfigSlicePart2
+    ) { p1, p2 ->
         PlayerConfigSlice(
             navBarCornerRadius = p1.navBarCornerRadius,
             navBarStyle = p1.navBarStyle,
             carouselStyle = p1.carouselStyle,
             fullPlayerLoadingTweaks = p1.fullPlayerLoadingTweaks,
             tapBackgroundClosesPlayer = p1.tapBackgroundClosesPlayer,
-            useSmoothCorners = smoothCorners,
-            playerThemePreference = themePref
+            useSmoothCorners = p2.useSmoothCorners,
+            playerThemePreference = p2.playerThemePreference,
+            reduceAnimations = p2.reduceAnimations,
+            animationSpeedScale = p2.animationSpeedScale,
+            backgroundBlurEnabled = p2.backgroundBlurEnabled
         )
     }
         .distinctUntilChanged()

@@ -96,6 +96,9 @@ data class SettingsUiState(
     val useAnimatedLyrics: Boolean = false,
     val animatedLyricsBlurEnabled: Boolean = true,
     val animatedLyricsBlurStrength: Float = 2.5f,
+    val reduceAnimations: Boolean = false,
+    val animationSpeedScale: String = "1.0",
+    val backgroundBlurEnabled: Boolean = true,
     val backupInfoDismissed: Boolean = false,
     val isDataTransferInProgress: Boolean = false,
     val restorePlan: RestorePlan? = null,
@@ -166,7 +169,10 @@ private sealed interface SettingsUiUpdate {
         val immersiveLyricsEnabled: Boolean,
         val immersiveLyricsTimeout: Long,
         val animatedLyricsBlurEnabled: Boolean,
-        val animatedLyricsBlurStrength: Float
+        val animatedLyricsBlurStrength: Float,
+        val reduceAnimations: Boolean,
+        val animationSpeedScale: String,
+        val backgroundBlurEnabled: Boolean
     ) : SettingsUiUpdate
 }
 
@@ -559,7 +565,10 @@ class SettingsViewModel @Inject constructor(
                 userPreferencesRepository.immersiveLyricsEnabledFlow,
                 userPreferencesRepository.immersiveLyricsTimeoutFlow,
                 userPreferencesRepository.animatedLyricsBlurEnabledFlow,
-                userPreferencesRepository.animatedLyricsBlurStrengthFlow
+                userPreferencesRepository.animatedLyricsBlurStrengthFlow,
+                userPreferencesRepository.reduceAnimationsFlow,
+                userPreferencesRepository.animationSpeedScaleFlow,
+                userPreferencesRepository.backgroundBlurEnabledFlow
             ) { values ->
                 SettingsUiUpdate.Group2(
                     keepPlayingInBackground = values[0] as Boolean,
@@ -578,7 +587,10 @@ class SettingsViewModel @Inject constructor(
                     immersiveLyricsEnabled = values[13] as Boolean,
                     immersiveLyricsTimeout = values[14] as Long,
                     animatedLyricsBlurEnabled = values[15] as Boolean,
-                    animatedLyricsBlurStrength = values[16] as Float
+                    animatedLyricsBlurStrength = values[16] as Float,
+                    reduceAnimations = values[17] as Boolean,
+                    animationSpeedScale = values[18] as String,
+                    backgroundBlurEnabled = values[19] as Boolean
                 )
             }.collect { update ->
                 _uiState.update { state ->
@@ -599,7 +611,10 @@ class SettingsViewModel @Inject constructor(
                         immersiveLyricsEnabled = update.immersiveLyricsEnabled,
                         immersiveLyricsTimeout = update.immersiveLyricsTimeout,
                         animatedLyricsBlurEnabled = update.animatedLyricsBlurEnabled,
-                        animatedLyricsBlurStrength = update.animatedLyricsBlurStrength
+                        animatedLyricsBlurStrength = update.animatedLyricsBlurStrength,
+                        reduceAnimations = update.reduceAnimations,
+                        animationSpeedScale = update.animationSpeedScale,
+                        backgroundBlurEnabled = update.backgroundBlurEnabled
                     )
                 }
             }
@@ -990,6 +1005,24 @@ class SettingsViewModel @Inject constructor(
     fun setAnimatedLyricsBlurStrength(strength: Float) {
         viewModelScope.launch {
             userPreferencesRepository.setAnimatedLyricsBlurStrength(strength)
+        }
+    }
+
+    fun setReduceAnimations(enabled: Boolean) {
+        viewModelScope.launch {
+            userPreferencesRepository.setReduceAnimations(enabled)
+        }
+    }
+
+    fun setAnimationSpeedScale(scale: String) {
+        viewModelScope.launch {
+            userPreferencesRepository.setAnimationSpeedScale(scale)
+        }
+    }
+
+    fun setBackgroundBlurEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            userPreferencesRepository.setBackgroundBlurEnabled(enabled)
         }
     }
 
