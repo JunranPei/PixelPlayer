@@ -1,0 +1,15 @@
+{
+  "name": "pixelplayer-knowledge-engine",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Integration structure for understand-anything knowledge engine in PixelPlayer",
+  "workspaces": [
+    "core",
+    "dashboard"
+  ],
+  "scripts": {
+    "scan": "node scan-project.mjs",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces"
+  }
+}
