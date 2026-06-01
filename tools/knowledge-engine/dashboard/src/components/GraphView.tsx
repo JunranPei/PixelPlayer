@@ -1264,6 +1264,13 @@ function useLayerDetailGraph() {
     const base = [...expandedEdges, ...topo.portalEdges];
     if (!selectedNodeId) return base;
 
+    // Count connections to avoid animating hundreds of edges at once, which lags Chrome.
+    // We render them highlighted and traceable but static if count is high (>40).
+    const selectedCount = base.filter(
+      (edge) => edge.source === selectedNodeId || edge.target === selectedNodeId
+    ).length;
+    const shouldAnimate = selectedCount <= 40;
+
     // Apply selection-based edge styling on top of topology edges
     return base.map((edge) => {
       const isSelectedEdge = edge.source === selectedNodeId || edge.target === selectedNodeId;
@@ -1271,10 +1278,20 @@ function useLayerDetailGraph() {
       if ((edge.style as Record<string, unknown>)?.strokeDasharray) return edge;
 
       if (isSelectedEdge) {
-        return { ...edge, animated: true, style: { stroke: "var(--color-accent)", strokeWidth: 2.5 }, labelStyle: { fill: "var(--color-accent)", fontSize: 11, fontWeight: 600 } };
+        return {
+          ...edge,
+          animated: shouldAnimate,
+          style: { stroke: "var(--color-accent)", strokeWidth: 2.5 },
+          labelStyle: { fill: "var(--color-accent)", fontSize: 11, fontWeight: 600 },
+        };
       }
       // Fade unrelated edges
-      return { ...edge, animated: false, style: { stroke: "var(--color-edge-dim)", strokeWidth: 1 }, labelStyle: { fill: "var(--color-text-muted)", fontSize: 10 } };
+      return {
+        ...edge,
+        animated: false,
+        style: { stroke: "var(--color-edge-dim)", strokeWidth: 1 },
+        labelStyle: { fill: "var(--color-text-muted)", fontSize: 10 },
+      };
     });
   }, [expandedEdges, topo.portalEdges, selectedNodeId]);
 

@@ -10,6 +10,8 @@
   "scripts": {
     "scan": "node scan-project.mjs",
     "build": "npm run build --workspaces",
-    "test": "npm run test --workspaces"
+    "test": "npm run test --workspaces",
+    "validate": "pnpm --filter @understand-anything/core exec vitest run src/graph-validation.test.ts",
+    "validate:factual": "node validate-factual.mjs"
   }
 }
