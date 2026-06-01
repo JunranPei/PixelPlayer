@@ -147,15 +147,15 @@ export function ThemePicker() {
             </div>
             <div className="flex gap-1">
               {([
-                { id: "serif" as HeadingFont, label: t.themePicker.serif, sample: "Aa" },
                 { id: "sans" as HeadingFont, label: t.themePicker.sans, sample: "Aa" },
+                { id: "serif" as HeadingFont, label: t.themePicker.serif, sample: "Aa" },
                 { id: "mono" as HeadingFont, label: t.themePicker.mono, sample: "Aa" },
               ]).map((opt) => (
                 <button
                   key={opt.id}
                   onClick={() => setHeadingFont(opt.id)}
-                  className={`flex-1 px-2 py-1.5 rounded text-xs transition-colors ${
-                    (config.headingFont ?? "serif") === opt.id
+                  className={`flex-1 px-2 py-1.5 rounded-lg text-xs transition-colors ${
+                    (config.headingFont ?? "sans") === opt.id
                       ? "bg-accent/15 text-accent"
                       : "text-text-secondary hover:text-text-primary hover:bg-elevated"
                   }`}

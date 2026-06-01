@@ -20,11 +20,11 @@ function PortalNode({
 
   return (
     <div
-      className="relative rounded-lg bg-elevated/60 overflow-hidden cursor-pointer transition-all duration-200 hover:bg-elevated/80"
+      className="relative rounded-2xl bg-elevated/60 overflow-hidden cursor-pointer transition-all duration-[220ms] ease-[var(--ease-standard)] hover:bg-elevated/80 hover:-translate-y-0.5"
       style={{
         width: 220,
         border: `2px dashed ${color.border}`,
-        boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+        boxShadow: "0 4px 14px -4px rgba(0,0,0,0.35)",
       }}
       onClick={() => data.onNavigate(data.targetLayerId)}
     >

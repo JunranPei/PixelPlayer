@@ -24,6 +24,56 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
+const HEX_RE = /^#?[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/;
+
+function normalizeHex(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const v = value.trim();
+  if (!HEX_RE.test(v)) return undefined;
+  return v.startsWith("#") ? v : `#${v}`;
+}
+
+/**
+ * Normalize whatever a project's `meta.theme` provides into a ThemeConfig.
+ * This is the "dynamic from graph" entry point — projects may supply a full
+ * config, or just a seed/accent hex, or a `dark`/`mode` hint. Anything we
+ * can't read falls through to the vibrant-violet default.
+ */
+export function normalizeMetaTheme(meta: unknown): ThemeConfig | null {
+  if (!meta || typeof meta !== "object") return null;
+  const m = meta as Record<string, unknown>;
+
+  // Determine mode (default dark).
+  const isLight =
+    m.mode === "light" || m.isDark === false || m.presetId === "m3-light";
+  const presetId = isLight ? "m3-light" : "m3-dark";
+
+  // Seed precedence: explicit seed → accent hex → nothing (use default swatch).
+  const seed =
+    normalizeHex(m.seed) ??
+    normalizeHex(m.accent) ??
+    normalizeHex((m as { primary?: unknown }).primary);
+
+  const headingFont =
+    m.headingFont === "serif" || m.headingFont === "mono"
+      ? (m.headingFont as ThemeConfig["headingFont"])
+      : "sans";
+
+  if (!seed && typeof m.accentId !== "string") {
+    // Nothing usable beyond mode — only worth returning if mode was explicit.
+    if (!isLight && m.mode == null && m.isDark == null && m.presetId == null) {
+      return null;
+    }
+  }
+
+  return {
+    presetId,
+    accentId: typeof m.accentId === "string" ? m.accentId : "violet",
+    ...(seed ? { seed } : {}),
+    headingFont,
+  };
+}
+
 function loadFromLocalStorage(): ThemeConfig | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);

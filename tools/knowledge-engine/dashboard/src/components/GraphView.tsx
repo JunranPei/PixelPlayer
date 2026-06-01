@@ -272,10 +272,10 @@ function useOverviewGraph() {
       target: agg.targetLayerId,
       label: `${agg.count}`,
       style: {
-        stroke: "rgba(212,165,116,0.4)",
+        stroke: "var(--color-edge)",
         strokeWidth: Math.min(1 + Math.log2(agg.count + 1), 5),
       },
-      labelStyle: { fill: "#a39787", fontSize: 11, fontWeight: 600 },
+      labelStyle: { fill: "var(--color-text-secondary)", fontSize: 11, fontWeight: 600 },
     }));
 
     const dims = new Map<string, { width: number; height: number }>();
@@ -566,9 +566,9 @@ function useLayerDetailTopology(): LayerDetailTopology & {
     // container, so just fade everything in diff mode at this stage).
     const aggEdges: Edge[] = interContainerAggregated.map((agg, i) => {
       const baseStyle = diffMode
-        ? { stroke: "rgba(212,165,116,0.08)", strokeWidth: 1 }
+        ? { stroke: "var(--color-edge-dim)", strokeWidth: 1 }
         : {
-            stroke: "rgba(212,165,116,0.4)",
+            stroke: "var(--color-edge)",
             strokeWidth: Math.min(1 + Math.log2(agg.count + 1), 5),
           };
       return {
@@ -578,7 +578,7 @@ function useLayerDetailTopology(): LayerDetailTopology & {
         label: String(agg.count),
         style: baseStyle,
         labelStyle: {
-          fill: diffMode ? "rgba(163,151,135,0.3)" : "#a39787",
+          fill: diffMode ? "var(--color-text-muted)" : "var(--color-text-secondary)",
           fontSize: 11,
         },
       };
@@ -618,7 +618,7 @@ function useLayerDetailTopology(): LayerDetailTopology & {
           id: `e-${portalEdgeIdx++}`,
           source: atomId,
           target: `portal:${portal.layerId}`,
-          style: { stroke: "rgba(212,165,116,0.2)", strokeWidth: 1, strokeDasharray: "4 4" },
+          style: { stroke: "var(--color-edge-dim)", strokeWidth: 1, strokeDasharray: "4 4" },
           animated: false,
         });
       }
@@ -1227,8 +1227,8 @@ function useLayerDetailGraph() {
           source: realSrc,
           target: realTgt,
           label: m.type,
-          style: { stroke: "rgba(212,165,116,0.5)", strokeWidth: 1.5 },
-          labelStyle: { fill: "#a39787", fontSize: 10 },
+          style: { stroke: "var(--color-edge)", strokeWidth: 1.5 },
+          labelStyle: { fill: "var(--color-text-muted)", fontSize: 10 },
         });
       }
     }
@@ -1245,8 +1245,8 @@ function useLayerDetailGraph() {
         source: e.source,
         target: e.target,
         label: e.type,
-        style: { stroke: "rgba(212,165,116,0.5)", strokeWidth: 1.5 },
-        labelStyle: { fill: "#a39787", fontSize: 10 },
+        style: { stroke: "var(--color-edge)", strokeWidth: 1.5 },
+        labelStyle: { fill: "var(--color-text-muted)", fontSize: 10 },
       });
     }
     return out;
@@ -1271,10 +1271,10 @@ function useLayerDetailGraph() {
       if ((edge.style as Record<string, unknown>)?.strokeDasharray) return edge;
 
       if (isSelectedEdge) {
-        return { ...edge, animated: true, style: { stroke: "rgba(212,165,116,0.8)", strokeWidth: 2.5 }, labelStyle: { fill: "#d4a574", fontSize: 11, fontWeight: 600 } };
+        return { ...edge, animated: true, style: { stroke: "var(--color-accent)", strokeWidth: 2.5 }, labelStyle: { fill: "var(--color-accent)", fontSize: 11, fontWeight: 600 } };
       }
       // Fade unrelated edges
-      return { ...edge, animated: false, style: { stroke: "rgba(212,165,116,0.08)", strokeWidth: 1 }, labelStyle: { fill: "rgba(163,151,135,0.2)", fontSize: 10 } };
+      return { ...edge, animated: false, style: { stroke: "var(--color-edge-dim)", strokeWidth: 1 }, labelStyle: { fill: "var(--color-text-muted)", fontSize: 10 } };
     });
   }, [expandedEdges, topo.portalEdges, selectedNodeId]);
 
@@ -1320,16 +1320,16 @@ function GraphViewInner() {
     nodes: initialNodes,
     edges: initialEdges,
     nodeToContainer,
-    containerIds,
     layoutStatus,
   } = navigationLevel === "overview"
-    ? { ...overviewGraph, nodeToContainer: undefined, containerIds: undefined }
+    ? { ...overviewGraph, nodeToContainer: undefined }
     : detailGraph;
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
   const { fitView, getViewport, setCenter } = useReactFlow();
+  const [zoomLevelClass, setZoomLevelClass] = useState("zoom-lod-high");
 
   useEffect(() => {
     setNodes(initialNodes);
@@ -1435,49 +1435,22 @@ function GraphViewInner() {
     tourBorrowedContainersRef.current = stillBorrowed;
   }, [tourHighlightedNodeIds, nodeToContainer, expandContainer, collapseContainer]);
 
-  // Zoom: debounced auto-expand when the user has zoomed in past 1.0.
-  // Hysteresis: zoom < 0.6 = no auto-expand AND no auto-collapse (v1, the
-  // user collapses manually). The handler reads expandedContainers via
-  // getState() inside the timeout to avoid re-creating on every expand.
-  const zoomTimeoutRef = useRef<number | null>(null);
-  // Only auto-expand on user-driven zoom-INs. Skip programmatic moves
-  // (e.g. fitView at layer entry, which would otherwise cascade-expand
-  // every container the moment the layer paints) and skip pans/zoom-outs
-  // (so a user who manually collapses a container at zoom > 1 can pan
-  // around without seeing it pop back open).
-  const prevZoomRef = useRef<number | null>(null);
   const onMove = useCallback(
-    (event: MouseEvent | TouchEvent | null) => {
-      if (event === null) return; // programmatic — skip
-      if (!containerIds || containerIds.length === 0) return;
-      if (zoomTimeoutRef.current !== null) {
-        window.clearTimeout(zoomTimeoutRef.current);
+    (_event: MouseEvent | TouchEvent | null, viewport: { zoom: number }) => {
+      // Zoom level LoD detection: check viewport and apply optimized CSS classes
+      const zoom = viewport.zoom;
+      let nextClass = "zoom-lod-high";
+      if (zoom < 0.35) {
+        nextClass = "zoom-lod-low";
+      } else if (zoom < 0.6) {
+        nextClass = "zoom-lod-mid";
       }
-      zoomTimeoutRef.current = window.setTimeout(() => {
-        const vp = getViewport();
-        const prev = prevZoomRef.current;
-        prevZoomRef.current = vp.zoom;
-        if (vp.zoom <= 1.0) return;
-        // Only fire when zoom actually increased — pan and zoom-out are no-ops.
-        if (prev !== null && vp.zoom <= prev) return;
-        const expanded = useDashboardStore.getState().expandedContainers;
-        for (const cid of containerIds) {
-          if (!expanded.has(cid)) expandContainer(cid);
-        }
-      }, 200);
+      if (nextClass !== zoomLevelClass) {
+        setZoomLevelClass(nextClass);
+      }
     },
-    [containerIds, getViewport, expandContainer],
+    [zoomLevelClass],
   );
-
-  // Clear any pending zoom timer on unmount or when handler identity changes.
-  useEffect(() => {
-    return () => {
-      if (zoomTimeoutRef.current !== null) {
-        window.clearTimeout(zoomTimeoutRef.current);
-        zoomTimeoutRef.current = null;
-      }
-    };
-  }, [onMove]);
 
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: { id: string }) => {
@@ -1506,7 +1479,7 @@ function GraphViewInner() {
   }
 
   return (
-    <div className="h-full w-full relative">
+    <div className={`h-full w-full relative ${zoomLevelClass}`}>
       <Breadcrumb />
       {focusNodeId && navigationLevel === "layer-detail" && (
         <div className="absolute top-14 left-1/2 -translate-x-1/2 z-10">
@@ -1526,7 +1499,7 @@ function GraphViewInner() {
         onEdgesChange={onEdgesChange}
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
-        onMove={navigationLevel === "layer-detail" ? onMove : undefined}
+        onMove={onMove}
         onInit={setReactFlowInstance}
         nodeTypes={nodeTypes}
         nodesDraggable={false}
@@ -1534,6 +1507,8 @@ function GraphViewInner() {
         edgesFocusable={false}
         edgesReconnectable={false}
         elementsSelectable={false}
+        onlyRenderVisibleElements
+        elevateEdgesOnSelect={false}
         fitView
         fitViewOptions={{ minZoom: 0.01, padding: 0.1 }}
         minZoom={0.01}
@@ -1551,21 +1526,13 @@ function GraphViewInner() {
         <SelectedNodeFitView />
       </ReactFlow>
       {(layoutStatus === "computing" || tourFitPending) && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "rgba(10,10,10,0.5)",
-            pointerEvents: "none",
-            zIndex: 10,
-          }}
-        >
-          <span style={{ color: "#d4a574", fontSize: 14 }}>
-            {tourFitPending ? "Locating tour highlight…" : "Computing layout…"}
-          </span>
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+          <div className="flex items-center gap-3 px-5 py-3 rounded-full glass-heavy">
+            <span className="w-4 h-4 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+            <span className="text-sm text-text-secondary">
+              {tourFitPending ? "Locating tour highlight…" : "Computing layout…"}
+            </span>
+          </div>
         </div>
       )}
     </div>

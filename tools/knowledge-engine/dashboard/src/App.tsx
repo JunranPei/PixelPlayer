@@ -20,10 +20,12 @@ import MobileLayout from "./components/MobileLayout";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import type { KeyboardShortcut } from "./hooks/useKeyboardShortcuts";
-import { ThemeProvider } from "./themes/index.ts";
+import { ThemeProvider, normalizeMetaTheme } from "./themes/index.ts";
 import { ThemePicker } from "./components/ThemePicker.tsx";
 import type { ThemeConfig } from "./themes/index.ts";
 import { I18nProvider, useI18n } from "./contexts/I18nContext.tsx";
+import ErrorBoundary from "./components/ErrorBoundary";
+
 
 // Lazy-load heavy / optional components so they ship in separate chunks.
 const CodeViewer = lazy(() => import("./components/CodeViewer"));
@@ -94,7 +96,11 @@ function App() {
 
   // In demo mode, skip token gate entirely
   if (DEMO_MODE) {
-    return <Dashboard accessToken="__demo__" />;
+    return (
+      <ErrorBoundary>
+        <Dashboard accessToken="__demo__" />
+      </ErrorBoundary>
+    );
   }
 
   // Show the token gate when no token is available
@@ -102,7 +108,11 @@ function App() {
     return <TokenGate onTokenValid={handleTokenValid} />;
   }
 
-  return <Dashboard accessToken={accessToken} />;
+  return (
+    <ErrorBoundary>
+      <Dashboard accessToken={accessToken} />
+    </ErrorBoundary>
+  );
 }
 
 function Dashboard({ accessToken }: { accessToken: string }) {
@@ -118,7 +128,10 @@ function Dashboard({ accessToken }: { accessToken: string }) {
     fetch(dataUrl("meta.json", accessToken))
       .then((r) => (r.ok ? r.json() : null))
       .then((meta) => {
-        if (meta?.theme) setMetaTheme(meta.theme);
+        // "Dynamic from graph": tolerate any reasonable meta.theme shape
+        // (full config, raw seed, or accent hex) → normalized ThemeConfig.
+        const normalized = normalizeMetaTheme(meta?.theme);
+        if (normalized) setMetaTheme(normalized);
       })
       .catch(() => {});
     fetch(dataUrl("config.json", accessToken))
@@ -409,7 +422,7 @@ function DashboardContent({
             key={tab}
             type="button"
             onClick={() => setSidebarTab(tab)}
-            className={`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wider transition-colors ${
+            className={`flex-1 px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-colors ${
               sidebarTab === tab
                 ? "bg-accent/15 text-accent"
                 : "text-text-muted hover:text-text-primary hover:bg-elevated"
@@ -452,12 +465,12 @@ function DashboardContent({
           {graph && !isKnowledgeGraph && domainGraph && (
             <>
               <div className="w-px h-5 bg-border-subtle" />
-              <div className="flex items-center bg-elevated rounded-lg p-0.5">
+              <div className="flex items-center bg-elevated rounded-full p-1">
                 <button
                   type="button"
                   onClick={() => setViewMode("domain")}
                   title={t.drawer.domain}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                  className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                     viewMode === "domain"
                       ? "bg-accent/20 text-accent"
                       : "text-text-muted hover:text-text-secondary"
@@ -469,7 +482,7 @@ function DashboardContent({
                   type="button"
                   onClick={() => setViewMode("structural")}
                   title={t.drawer.structural}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                  className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                     viewMode === "structural"
                       ? "bg-accent/20 text-accent"
                       : "text-text-muted hover:text-text-secondary"
@@ -490,12 +503,12 @@ function DashboardContent({
             {!isKnowledgeGraph && viewMode !== "domain" && (
               <>
                 <div className="w-px h-5 bg-border-subtle" />
-                <div className="flex items-center bg-elevated rounded-lg p-0.5">
+                <div className="flex items-center bg-elevated rounded-full p-1">
                   <button
                     type="button"
                     onClick={() => setDetailLevel("file")}
                     title={t.detailLevel.filesTitle}
-                    className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                    className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                       detailLevel === "file"
                         ? "bg-accent/20 text-accent"
                         : "text-text-muted hover:text-text-secondary"
@@ -507,7 +520,7 @@ function DashboardContent({
                     type="button"
                     onClick={() => setDetailLevel("class")}
                     title={t.detailLevel.classesTitle}
-                    className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                    className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                       detailLevel === "class"
                         ? "bg-accent/20 text-accent"
                         : "text-text-muted hover:text-text-secondary"
@@ -521,7 +534,7 @@ function DashboardContent({
                     type="button"
                     onClick={toggleShowFunctionsInClassView}
                     title={t.detailLevel.fnTitle}
-                    className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded border transition-colors ${
+                    className={`text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full border transition-colors ${
                       showFunctionsInClassView
                         ? "border-amber-500/50 bg-amber-500/10 text-amber-400"
                         : "border-border-medium bg-elevated text-text-muted hover:text-text-secondary"
@@ -547,7 +560,7 @@ function DashboardContent({
                 <button
                   key={cat.key}
                   onClick={() => toggleNodeTypeFilter(cat.key)}
-                  className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded border transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                  className={`text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full border transition-colors flex items-center gap-1.5 whitespace-nowrap ${
                     nodeTypeFilters[cat.key] !== false
                       ? "border-border-medium bg-elevated text-text-secondary hover:text-text-primary"
                       : "border-transparent bg-transparent text-text-muted/40 line-through hover:text-text-muted"
@@ -575,7 +588,7 @@ function DashboardContent({
           <ExportMenu />
           <button
             onClick={togglePathFinder}
-            className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-sm bg-elevated text-text-secondary hover:text-text-primary transition-colors"
+            className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-full text-sm bg-elevated text-text-secondary hover:text-text-primary state-layer transition-colors"
             title={t.pathFinder.title}
           >
             <svg

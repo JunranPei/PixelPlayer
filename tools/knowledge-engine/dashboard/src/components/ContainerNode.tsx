@@ -24,8 +24,8 @@ function ContainerNodeComponent({ data, width, height }: NodeProps<ContainerFlow
   const borderColor = data.isDiffAffected
     ? "var(--color-diff-changed)"
     : data.isExpanded || data.isFocusedViaChild
-      ? "rgba(212,165,116,0.6)"
-      : "rgba(212,165,116,0.25)";
+      ? "var(--color-accent)"
+      : "var(--color-border-medium)";
   const borderWidth = data.isExpanded || data.isFocusedViaChild ? 1.5 : 1;
 
   const labelDimmed = data.name === "~";
@@ -42,11 +42,11 @@ function ContainerNodeComponent({ data, width, height }: NodeProps<ContainerFlow
       tabIndex={0}
       aria-expanded={data.isExpanded}
       aria-label={`${labelText} container, ${data.childCount} item${data.childCount !== 1 ? "s" : ""}, ${data.isExpanded ? "expanded" : "collapsed"}`}
-      className="rounded-xl cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-[rgba(212,165,116,0.6)]"
+      className="rounded-2xl cursor-pointer transition-all duration-[280ms] ease-[var(--ease-spring)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-accent)]"
       style={{
         width,
         height,
-        background: "rgba(255,255,255,0.02)",
+        background: "var(--color-accent-overlay-bg)",
         border: `${borderWidth}px solid ${borderColor}`,
         position: "relative",
       }}
@@ -79,17 +79,17 @@ function ContainerNodeComponent({ data, width, height }: NodeProps<ContainerFlow
               style={{
                 marginLeft: 6,
                 fontSize: 10,
-                background: "rgba(212,165,116,0.2)",
-                color: "var(--color-gold, #d4a574)",
+                background: "var(--color-accent-overlay-bg)",
+                color: "var(--color-accent)",
                 padding: "1px 6px",
-                borderRadius: 8,
+                borderRadius: 999,
               }}
             >
               {data.searchHitCount} hit{data.searchHitCount !== 1 ? "s" : ""}
             </span>
           )}
         </span>
-        <span style={{ color: "#a39787", fontSize: 11 }}>{data.childCount}</span>
+        <span style={{ color: "var(--color-text-secondary)", fontSize: 11 }}>{data.childCount}</span>
       </div>
     </div>
   );

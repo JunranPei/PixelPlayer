@@ -1,0 +1,14 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ke-dashboard",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["-C", "tools/knowledge-engine/dashboard", "dev"],
+      "port": 5173,
+      "env": {
+        "UNDERSTAND_ACCESS_TOKEN": "previewtoken"
+      }
+    }
+  ]
+}

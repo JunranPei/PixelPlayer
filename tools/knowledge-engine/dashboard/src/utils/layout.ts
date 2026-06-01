@@ -91,6 +91,15 @@ interface ForceNode extends SimulationNodeDatum {
  * Force-directed layout using d3-force — used for knowledge graphs.
  * Optionally groups nodes by community (layer/category).
  */
+function seedFromString(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0; // Convert to 32bit integer
+  }
+  return (Math.abs(hash) % 1000000) / 1000000;
+}
+
 export function applyForceLayout(
   nodes: Node[],
   edges: Edge[],
@@ -100,12 +109,16 @@ export function applyForceLayout(
   if (nodes.length === 0) return { nodes, edges };
 
   // Build simulation nodes with optional community assignment
-  const simNodes: ForceNode[] = nodes.map((n) => ({
-    id: n.id,
-    x: Math.random() * 800 - 400,
-    y: Math.random() * 800 - 400,
-    community: communityMap?.get(n.id),
-  }));
+  const simNodes: ForceNode[] = nodes.map((n) => {
+    const rx = seedFromString(n.id + "-x");
+    const ry = seedFromString(n.id + "-y");
+    return {
+      id: n.id,
+      x: rx * 800 - 400,
+      y: ry * 800 - 400,
+      community: communityMap?.get(n.id),
+    };
+  });
 
   const nodeIdSet = new Set(simNodes.map((n) => n.id));
   const simLinks: SimulationLinkDatum<ForceNode>[] = edges
@@ -226,6 +239,82 @@ export function nodesToElkInput(
       targets: [String(e.target)],
     })),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Async force layout (worker-backed) — keeps the main thread responsive
+// ---------------------------------------------------------------------------
+
+type ForceWorkerResult = {
+  requestId: number;
+  positions: Record<string, { x: number; y: number }>;
+};
+
+let forceWorker: Worker | null = null;
+let forceReqId = 0;
+const forcePending = new Map<number, (m: Map<string, { x: number; y: number }>) => void>();
+
+function getForceWorker(): Worker | null {
+  if (typeof Worker === "undefined") return null;
+  if (!forceWorker) {
+    try {
+      forceWorker = new Worker(
+        new URL("./force-layout.worker.ts", import.meta.url),
+        { type: "module" },
+      );
+      forceWorker.onmessage = (e: MessageEvent<ForceWorkerResult>) => {
+        const { requestId, positions } = e.data;
+        const resolve = forcePending.get(requestId);
+        if (resolve) {
+          forcePending.delete(requestId);
+          resolve(new Map(Object.entries(positions)));
+        }
+      };
+      forceWorker.onerror = () => {
+        // Reject-as-empty: callers fall back to last-known positions.
+        for (const resolve of forcePending.values()) resolve(new Map());
+        forcePending.clear();
+      };
+    } catch {
+      forceWorker = null;
+    }
+  }
+  return forceWorker;
+}
+
+/**
+ * Run the force-directed layout off the main thread. Resolves to an
+ * id → position map. Falls back to the synchronous simulation when web
+ * workers aren't available (e.g. SSR / older runtimes).
+ */
+export function applyForceLayoutAsync(
+  nodes: Node[],
+  edges: Edge[],
+  nodeDimensions?: Map<string, { width: number; height: number }>,
+  communityMap?: Map<string, number>,
+): Promise<Map<string, { x: number; y: number }>> {
+  const worker = getForceWorker();
+  if (!worker) {
+    const { nodes: laid } = applyForceLayout(nodes, edges, nodeDimensions, communityMap);
+    const m = new Map<string, { x: number; y: number }>();
+    for (const n of laid) m.set(n.id, n.position);
+    return Promise.resolve(m);
+  }
+  const payloadNodes = nodes.map((n) => ({
+    id: n.id,
+    width: nodeDimensions?.get(n.id)?.width ?? NODE_WIDTH,
+    height: nodeDimensions?.get(n.id)?.height ?? NODE_HEIGHT,
+    community: communityMap?.get(n.id),
+  }));
+  const payloadEdges = edges.map((e) => ({
+    source: String(e.source),
+    target: String(e.target),
+  }));
+  const requestId = ++forceReqId;
+  return new Promise((resolve) => {
+    forcePending.set(requestId, resolve);
+    worker.postMessage({ requestId, nodes: payloadNodes, edges: payloadEdges });
+  });
 }
 
 export function mergeElkPositions<T extends Node>(

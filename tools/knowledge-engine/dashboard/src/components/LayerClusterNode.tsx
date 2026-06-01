@@ -31,16 +31,16 @@ function LayerClusterNode({
 
   return (
     <div
-      className="relative rounded-xl bg-elevated border border-border-subtle overflow-hidden cursor-pointer transition-all duration-200 hover:border-gold/40 hover:shadow-lg group"
+      className="relative rounded-[22px] bg-elevated border border-border-subtle overflow-hidden cursor-pointer transition-all duration-[280ms] ease-[var(--ease-spring)] hover:border-accent/40 hover:-translate-y-0.5 hover:shadow-xl group"
       style={{
         width: 300,
-        boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
+        boxShadow: "0 6px 20px -6px rgba(0,0,0,0.45)",
       }}
       onClick={() => data.onDrillIn(data.layerId)}
     >
       {/* Left color bar */}
       <div
-        className="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-xl"
+        className="absolute left-0 top-2 bottom-2 w-1.5 rounded-full"
         style={{ backgroundColor: color.label }}
       />
 
@@ -61,7 +61,7 @@ function LayerClusterNode({
           </span>
           <div className="flex items-center gap-2">
             {data.searchMatchCount != null && data.searchMatchCount > 0 && (
-              <span className="text-[10px] font-mono bg-gold/20 text-gold px-1.5 py-0.5 rounded">
+              <span className="text-[10px] font-mono bg-accent/20 text-accent px-2 py-0.5 rounded-full">
                 {data.searchMatchCount} match{data.searchMatchCount !== 1 ? "es" : ""}
               </span>
             )}

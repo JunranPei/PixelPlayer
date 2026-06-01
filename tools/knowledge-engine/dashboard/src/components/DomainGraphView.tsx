@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -169,6 +169,23 @@ function DomainGraphViewInner() {
   const activeDomainId = useDashboardStore((s) => s.activeDomainId);
   const clearActiveDomain = useDashboardStore((s) => s.clearActiveDomain);
   const { t } = useI18n();
+  const [zoomLevelClass, setZoomLevelClass] = useState("zoom-lod-high");
+
+  const onMove = useCallback(
+    (_event: MouseEvent | TouchEvent | null, viewport: { zoom: number }) => {
+      const zoom = viewport.zoom;
+      let nextClass = "zoom-lod-high";
+      if (zoom < 0.35) {
+        nextClass = "zoom-lod-low";
+      } else if (zoom < 0.6) {
+        nextClass = "zoom-lod-mid";
+      }
+      if (nextClass !== zoomLevelClass) {
+        setZoomLevelClass(nextClass);
+      }
+    },
+    [zoomLevelClass],
+  );
 
   // Build structural nodes/edges/dims synchronously; only the layout call
   // itself is async, so we memo the structural pieces and run ELK in an
@@ -231,7 +248,7 @@ function DomainGraphViewInner() {
   }
 
   return (
-    <div className="h-full w-full relative">
+    <div className={`h-full w-full relative ${zoomLevelClass}`}>
       {activeDomainId && (
         <div className="absolute top-3 left-3 z-10">
           <button
@@ -247,10 +264,13 @@ function DomainGraphViewInner() {
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        onlyRenderVisibleElements
+        elevateEdgesOnSelect={false}
         fitView
         fitViewOptions={{ padding: 0.2 }}
         minZoom={0.1}
         maxZoom={2}
+        onMove={onMove}
         proOptions={{ hideAttribution: true }}
       >
         <Background

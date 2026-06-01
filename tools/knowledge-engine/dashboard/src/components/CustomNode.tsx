@@ -133,12 +133,12 @@ function CustomNodeComponent({
 
   return (
     <div
-      className={`relative rounded-lg bg-elevated border border-border-subtle ${extraClass} min-w-[180px] max-w-[220px] overflow-hidden transition-[box-shadow,outline,opacity,filter] duration-200 cursor-pointer shadow-[0_2px_8px_rgba(0,0,0,0.3)]`}
+      className={`group relative rounded-2xl bg-elevated border border-border-subtle ${extraClass} min-w-[190px] max-w-[230px] overflow-hidden transition-all duration-[280ms] ease-[var(--ease-spring)] cursor-pointer shadow-[0_4px_14px_-4px_rgba(0,0,0,0.45)] hover:-translate-y-0.5 hover:shadow-[0_12px_26px_-8px_rgba(0,0,0,0.55)]`}
       onClick={() => data.onNodeClick?.(id)}
     >
       {/* Left color bar */}
       <div
-        className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg"
+        className="absolute left-0 top-1.5 bottom-1.5 w-1.5 rounded-full"
         style={{ backgroundColor: barColor }}
       />
 
@@ -150,16 +150,16 @@ function CustomNodeComponent({
 
       <div className="pl-4 pr-3 py-2">
         <div className="flex items-center justify-between mb-1">
-          <span className={`text-[10px] font-semibold uppercase tracking-wider ${textColor}`}>
+          <span className={`text-[10px] font-semibold uppercase tracking-wider ${textColor} node-meta`}>
             {data.nodeType}
           </span>
           <div className="flex items-center gap-1.5">
-            <span className={`text-[9px] font-mono ${complexityColor}`}>
+            <span className={`text-[9px] font-mono ${complexityColor} node-complexity`}>
               {data.complexity}
             </span>
             {data.tags?.includes("tested") && (
               <span
-                className="inline-block w-1.5 h-1.5 rounded-full bg-node-function shadow-[0_0_4px_rgba(90,158,111,0.6)]"
+                className="inline-block w-1.5 h-1.5 rounded-full bg-node-function shadow-[0_0_4px_rgba(90,158,111,0.6)] node-tested-indicator"
                 role="img"
                 aria-label={t.customNode.tested}
                 title={t.customNode.hasTests}
@@ -172,7 +172,7 @@ function CustomNodeComponent({
           {truncatedName}
         </div>
 
-        <div className="text-[11px] text-text-secondary mt-1 line-clamp-2 leading-tight">
+        <div className="text-[11px] text-text-secondary mt-1 line-clamp-2 leading-tight node-summary">
           {data.summary}
         </div>
       </div>

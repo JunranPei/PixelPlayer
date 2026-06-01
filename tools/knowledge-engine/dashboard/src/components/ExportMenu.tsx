@@ -51,6 +51,17 @@ export default function ExportMenu() {
     const edges = reactFlowInstance.getEdges();
     if (nodes.length === 0) return null;
 
+    // Read the live theme tokens so the exported SVG matches whatever palette
+    // (seed/preset) is active rather than baking in the old gold constants.
+    const css = getComputedStyle(document.documentElement);
+    const tok = (name: string, fallback: string) =>
+      css.getPropertyValue(name).trim() || fallback;
+    const bgColor = tok("--color-root", "#131016");
+    const cardColor = tok("--color-elevated", "#272232");
+    const edgeColor = tok("--color-edge", "rgba(201,188,255,0.38)");
+    const borderColor = tok("--color-border-medium", "rgba(201,188,255,0.24)");
+    const labelColor = tok("--color-text-primary", "#ece5f2");
+
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     nodes.forEach((node) => {
       const x = node.position.x;
@@ -70,7 +81,7 @@ export default function ExportMenu() {
     const offsetY = -minY + padding;
 
     let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
-    svgContent += `<rect width="100%" height="100%" fill="#0a0a0a"/>`;
+    svgContent += `<rect width="100%" height="100%" fill="${escapeXml(bgColor)}"/>`;
 
     edges.forEach((edge) => {
       const sourceNode = nodes.find((n) => n.id === edge.source);
@@ -82,7 +93,7 @@ export default function ExportMenu() {
       const tx = targetNode.position.x + (targetNode.width ?? 200) / 2 + offsetX;
       const ty = targetNode.position.y + (targetNode.height ?? 80) / 2 + offsetY;
 
-      svgContent += `<line x1="${sx}" y1="${sy}" x2="${tx}" y2="${ty}" stroke="rgba(212,165,116,0.3)" stroke-width="1.5"/>`;
+      svgContent += `<line x1="${sx}" y1="${sy}" x2="${tx}" y2="${ty}" stroke="${escapeXml(edgeColor)}" stroke-width="1.5"/>`;
     });
 
     nodes.forEach((node) => {
@@ -93,8 +104,8 @@ export default function ExportMenu() {
       const w = node.width ?? 200;
       const h = node.height ?? 80;
 
-      svgContent += `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="8" fill="#1a1a1a" stroke="rgba(212,165,116,0.2)" stroke-width="1"/>`;
-      svgContent += `<text x="${x + w / 2}" y="${y + h / 2}" fill="#d4a574" text-anchor="middle" dominant-baseline="middle" font-size="12">${escapeXml(String(node.data.label ?? node.id))}</text>`;
+      svgContent += `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="14" fill="${escapeXml(cardColor)}" stroke="${escapeXml(borderColor)}" stroke-width="1"/>`;
+      svgContent += `<text x="${x + w / 2}" y="${y + h / 2}" fill="${escapeXml(labelColor)}" text-anchor="middle" dominant-baseline="middle" font-size="12" font-family="'Product Sans','Google Sans','Manrope',sans-serif">${escapeXml(String(node.data.label ?? node.id))}</text>`;
     });
 
     svgContent += `</svg>`;

@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from "react";
+import { useEffect, useMemo, useCallback, useRef, useState } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -6,6 +6,7 @@ import {
   BackgroundVariant,
   Controls,
   MiniMap,
+  useReactFlow,
 } from "@xyflow/react";
 import type { Edge, Node } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
@@ -13,7 +14,7 @@ import "@xyflow/react/dist/style.css";
 import CustomNode from "./CustomNode";
 import type { CustomNodeData } from "./CustomNode";
 import { useDashboardStore } from "../store";
-import { applyForceLayout, NODE_WIDTH, NODE_HEIGHT } from "../utils/layout";
+import { applyForceLayoutAsync, NODE_WIDTH, NODE_HEIGHT } from "../utils/layout";
 import type { KnowledgeGraph } from "@understand-anything/core/types";
 
 const nodeTypes = {
@@ -22,21 +23,28 @@ const nodeTypes = {
 
 /** Edge style presets by knowledge edge type. */
 const EDGE_STYLES: Record<string, React.CSSProperties> = {
-  related: { stroke: "var(--color-border-medium)", strokeWidth: 0.5, opacity: 0.12 },
+  related: { stroke: "var(--color-border-medium)", strokeWidth: 0.5, opacity: 0.14 },
   cites: { stroke: "var(--color-node-source)", strokeWidth: 1.5, strokeDasharray: "6 3" },
-  contradicts: { stroke: "#c97070", strokeWidth: 2 },
+  contradicts: { stroke: "#ff6b6b", strokeWidth: 2 },
   builds_on: { stroke: "var(--color-node-claim)", strokeWidth: 1.5 },
   exemplifies: { stroke: "var(--color-node-entity)", strokeWidth: 1, strokeDasharray: "3 3" },
-  categorized_under: { stroke: "var(--color-border-medium)", strokeWidth: 0.5, opacity: 0.08 },
+  categorized_under: { stroke: "var(--color-border-medium)", strokeWidth: 0.5, opacity: 0.1 },
   authored_by: { stroke: "var(--color-node-entity)", strokeWidth: 1, strokeDasharray: "4 4" },
-  implements: { stroke: "var(--color-node-function)", strokeWidth: 1, opacity: 0.4 },
-  depends_on: { stroke: "var(--color-node-module)", strokeWidth: 1, opacity: 0.4 },
+  implements: { stroke: "var(--color-node-function)", strokeWidth: 1, opacity: 0.45 },
+  depends_on: { stroke: "var(--color-node-module)", strokeWidth: 1, opacity: 0.45 },
 };
 
+/**
+ * "Weak" edge types are numerous and visually near-invisible. Above this node
+ * count we drop them from the render set unless they touch the active node —
+ * this is the single biggest win for large knowledge graphs (thousands of SVG
+ * paths otherwise). Meaningful edges are always rendered.
+ */
+const WEAK_EDGE_TYPES = new Set(["related", "categorized_under"]);
+const LOD_NODE_THRESHOLD = 300;
+
 /** Compute node size based on connection count. */
-function getNodeDimensions(
-  edgeCount: number,
-): { width: number; height: number } {
+function getNodeDimensions(edgeCount: number): { width: number; height: number } {
   const scale = Math.min(1.5, Math.max(0.85, 0.85 + edgeCount * 0.03));
   return {
     width: Math.round(NODE_WIDTH * scale),
@@ -44,53 +52,19 @@ function getNodeDimensions(
   };
 }
 
-/**
- * Compute the stable layout (positions) from graph topology.
- * This only re-runs when the graph data or filters change, NOT on selection/search.
- */
-function computeLayout(
-  graph: KnowledgeGraph,
-): { positionMap: Map<string, { x: number; y: number }>; edgeCounts: Map<string, number>; communityMap: Map<string, number> } {
-  const edgeCounts = new Map<string, number>();
-  for (const edge of graph.edges) {
-    edgeCounts.set(edge.source, (edgeCounts.get(edge.source) ?? 0) + 1);
-    edgeCounts.set(edge.target, (edgeCounts.get(edge.target) ?? 0) + 1);
-  }
-
-  const communityMap = new Map<string, number>();
-  graph.layers.forEach((layer, i) => {
-    for (const nodeId of layer.nodeIds) {
-      communityMap.set(nodeId, i);
-    }
-  });
-
-  const dims = new Map<string, { width: number; height: number }>();
-  for (const node of graph.nodes) {
-    dims.set(node.id, getNodeDimensions(edgeCounts.get(node.id) ?? 0));
-  }
-
-  // Build temporary nodes/edges for layout computation only
-  const tmpNodes: Node[] = graph.nodes.map((node) => ({
-    id: node.id,
-    type: "custom" as const,
-    position: { x: 0, y: 0 },
-    data: {},
-  }));
-
-  const tmpEdges: Edge[] = graph.edges.map((e, i) => ({
-    id: `ke-${i}`,
-    source: e.source,
-    target: e.target,
-  }));
-
-  const { nodes: layoutedNodes } = applyForceLayout(tmpNodes, tmpEdges, dims, communityMap);
-
-  const positionMap = new Map<string, { x: number; y: number }>();
-  for (const n of layoutedNodes) {
-    positionMap.set(n.id, n.position);
-  }
-
-  return { positionMap, edgeCounts, communityMap };
+/** Fits the view once, when nodes first appear after async layout. */
+function FitOnData({ nodeCount }: { nodeCount: number }) {
+  const { fitView } = useReactFlow();
+  const fittedRef = useRef(false);
+  useEffect(() => {
+    if (fittedRef.current || nodeCount === 0) return;
+    fittedRef.current = true;
+    const raf = requestAnimationFrame(() =>
+      fitView({ padding: 0.15, duration: 400, minZoom: 0.05 }),
+    );
+    return () => cancelAnimationFrame(raf);
+  }, [nodeCount, fitView]);
+  return null;
 }
 
 function KnowledgeGraphViewInner() {
@@ -101,6 +75,23 @@ function KnowledgeGraphViewInner() {
   const searchResultsRaw = useDashboardStore((s) => s.searchResults);
   const tourHighlightedNodeIds = useDashboardStore((s) => s.tourHighlightedNodeIds);
   const nodeTypeFilters = useDashboardStore((s) => s.nodeTypeFilters);
+  const [zoomLevelClass, setZoomLevelClass] = useState("zoom-lod-high");
+
+  const onMove = useCallback(
+    (_event: MouseEvent | TouchEvent | null, viewport: { zoom: number }) => {
+      const zoom = viewport.zoom;
+      let nextClass = "zoom-lod-high";
+      if (zoom < 0.35) {
+        nextClass = "zoom-lod-low";
+      } else if (zoom < 0.6) {
+        nextClass = "zoom-lod-mid";
+      }
+      if (nextClass !== zoomLevelClass) {
+        setZoomLevelClass(nextClass);
+      }
+    },
+    [zoomLevelClass],
+  );
 
   const onNodeClick = useCallback(
     (nodeId: string) => selectNode(nodeId),
@@ -136,22 +127,69 @@ function KnowledgeGraphViewInner() {
     return { ...graph, nodes: filteredNodes, edges: filteredEdges };
   }, [graph, nodeTypeFilters]);
 
-  // Compute layout ONCE per graph/filter change — stable positions
-  const { positionMap, edgeCounts } = useMemo(() => {
-    if (!filteredGraph) return { positionMap: new Map(), edgeCounts: new Map() };
-    return computeLayout(filteredGraph);
+  // Cheap synchronous derivations (edge counts, communities, dims).
+  const { edgeCounts, communityMap, dims } = useMemo(() => {
+    const ec = new Map<string, number>();
+    const cm = new Map<string, number>();
+    const dm = new Map<string, { width: number; height: number }>();
+    if (!filteredGraph) return { edgeCounts: ec, communityMap: cm, dims: dm };
+    for (const edge of filteredGraph.edges) {
+      ec.set(edge.source, (ec.get(edge.source) ?? 0) + 1);
+      ec.set(edge.target, (ec.get(edge.target) ?? 0) + 1);
+    }
+    filteredGraph.layers.forEach((layer, i) => {
+      for (const nodeId of layer.nodeIds) cm.set(nodeId, i);
+    });
+    for (const node of filteredGraph.nodes) {
+      dm.set(node.id, getNodeDimensions(ec.get(node.id) ?? 0));
+    }
+    return { edgeCounts: ec, communityMap: cm, dims: dm };
   }, [filteredGraph]);
+
+  // Async force layout (off the main thread). Positions are stable across
+  // selection/search/tour — those only restyle, never relayout.
+  const [positionMap, setPositionMap] = useState<Map<string, { x: number; y: number }>>(new Map());
+  const [layoutStatus, setLayoutStatus] = useState<"computing" | "ready">("ready");
+
+  useEffect(() => {
+    if (!filteredGraph || filteredGraph.nodes.length === 0) {
+      setPositionMap(new Map());
+      setLayoutStatus("ready");
+      return;
+    }
+    let cancelled = false;
+    setLayoutStatus("computing");
+    const tmpNodes: Node[] = filteredGraph.nodes.map((node) => ({
+      id: node.id,
+      type: "custom" as const,
+      position: { x: 0, y: 0 },
+      data: {},
+    }));
+    const tmpEdges: Edge[] = filteredGraph.edges.map((e, i) => ({
+      id: `ke-${i}`,
+      source: e.source,
+      target: e.target,
+    }));
+    applyForceLayoutAsync(tmpNodes, tmpEdges, dims, communityMap).then((pm) => {
+      if (cancelled) return;
+      setPositionMap(pm);
+      setLayoutStatus("ready");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [filteredGraph, dims, communityMap]);
 
   // Build visual nodes/edges — recomputes on selection/search/tour WITHOUT re-layout
   const { nodes, edges } = useMemo(() => {
-    if (!filteredGraph) return { nodes: [], edges: [] };
+    if (!filteredGraph || positionMap.size === 0) return { nodes: [], edges: [] };
 
+    const activeId = focusNodeId ?? selectedNodeId;
     const neighborIds = new Set<string>();
-    if (focusNodeId || selectedNodeId) {
-      const focusId = focusNodeId ?? selectedNodeId;
+    if (activeId) {
       for (const edge of filteredGraph.edges) {
-        if (edge.source === focusId) neighborIds.add(edge.target);
-        if (edge.target === focusId) neighborIds.add(edge.source);
+        if (edge.source === activeId) neighborIds.add(edge.target);
+        if (edge.target === activeId) neighborIds.add(edge.source);
       }
     }
 
@@ -159,11 +197,7 @@ function KnowledgeGraphViewInner() {
       const isSelected = node.id === selectedNodeId;
       const isFocused = node.id === focusNodeId;
       const isNeighbor = neighborIds.has(node.id);
-      const isSelectionFaded =
-        (focusNodeId || selectedNodeId) &&
-        !isSelected &&
-        !isFocused &&
-        !isNeighbor;
+      const isSelectionFaded = !!activeId && !isSelected && !isFocused && !isNeighbor;
       const searchScore = searchResults.get(node.id);
       const isHighlighted = searchScore !== undefined;
       const isTourHighlighted = tourSet.has(node.id);
@@ -181,7 +215,7 @@ function KnowledgeGraphViewInner() {
         isDiffAffected: false,
         isDiffFaded: false,
         isNeighbor,
-        isSelectionFaded: !!isSelectionFaded,
+        isSelectionFaded,
         onNodeClick,
         incomingCount: edgeCounts.get(node.id) ?? 0,
         tags: node.tags,
@@ -195,45 +229,43 @@ function KnowledgeGraphViewInner() {
       };
     });
 
-    const activeId = focusNodeId ?? selectedNodeId;
-    const rfEdges: Edge[] = filteredGraph.edges.map((e) => {
-      const baseStyle = EDGE_STYLES[e.type] ?? EDGE_STYLES.related;
-      const isConnected = activeId && (e.source === activeId || e.target === activeId);
+    const large = filteredGraph.nodes.length > LOD_NODE_THRESHOLD;
+    const rfEdges: Edge[] = [];
+    for (const e of filteredGraph.edges) {
+      const isConnected = !!activeId && (e.source === activeId || e.target === activeId);
+      // Level-of-detail: drop near-invisible bulk edges on large graphs
+      // unless they touch the active node.
+      if (large && WEAK_EDGE_TYPES.has(e.type) && !isConnected) continue;
 
-      // When a node is selected: highlight connected edges, dim the rest
+      const baseStyle = EDGE_STYLES[e.type] ?? EDGE_STYLES.related;
       let style: React.CSSProperties;
       if (activeId) {
-        if (isConnected) {
-          style = {
-            ...baseStyle,
-            strokeWidth: Math.max(2, (baseStyle.strokeWidth as number ?? 1) * 1.5),
-            opacity: 1,
-          };
-        } else {
-          style = { ...baseStyle, opacity: 0.04 };
-        }
+        style = isConnected
+          ? { ...baseStyle, strokeWidth: Math.max(2, (baseStyle.strokeWidth as number ?? 1) * 1.5), opacity: 1 }
+          : { ...baseStyle, opacity: 0.04 };
       } else {
         style = baseStyle;
       }
 
-      return {
+      rfEdges.push({
         id: `ke-${e.source}-${e.target}-${e.type}`,
         source: e.source,
         target: e.target,
         style,
-        animated: e.type === "contradicts" && (!activeId || !!isConnected),
-        label: isConnected && e.type !== "related" && e.type !== "categorized_under"
-          ? e.type.replace(/_/g, " ")
-          : undefined,
+        animated: e.type === "contradicts" && (!activeId || isConnected),
+        label:
+          isConnected && e.type !== "related" && e.type !== "categorized_under"
+            ? e.type.replace(/_/g, " ")
+            : undefined,
         labelStyle: { fill: "var(--color-text-muted)", fontSize: 9, opacity: 0.7 },
         labelBgStyle: { fill: "var(--color-surface)", fillOpacity: 0.9 },
         labelBgPadding: [4, 2] as [number, number],
         labelBgBorderRadius: 3,
-      };
-    });
+      });
+    }
 
     return { nodes: rfNodes, edges: rfEdges };
-  }, [filteredGraph, selectedNodeId, focusNodeId, searchResults, tourSet, onNodeClick, positionMap, edgeCounts]);
+  }, [filteredGraph, positionMap, selectedNodeId, focusNodeId, searchResults, tourSet, onNodeClick, edgeCounts]);
 
   if (!graph) {
     return (
@@ -244,22 +276,25 @@ function KnowledgeGraphViewInner() {
   }
 
   return (
-    <div className="h-full w-full relative">
+    <div className={`h-full w-full relative ${zoomLevelClass}`}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        onlyRenderVisibleElements
+        elevateEdgesOnSelect={false}
         fitView
         fitViewOptions={{ padding: 0.15 }}
         minZoom={0.05}
         maxZoom={2}
+        onMove={onMove}
         proOptions={{ hideAttribution: true }}
       >
         <Background
           variant={BackgroundVariant.Dots}
-          gap={20}
+          gap={22}
           size={1}
-          color="var(--color-border-subtle)"
+          color="var(--color-edge-dot)"
         />
         <Controls />
         <MiniMap
@@ -278,7 +313,16 @@ function KnowledgeGraphViewInner() {
           maskColor="var(--glass-bg)"
           className="!bg-surface !border !border-border-subtle"
         />
+        <FitOnData nodeCount={nodes.length} />
       </ReactFlow>
+      {layoutStatus === "computing" && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+          <div className="flex items-center gap-3 px-5 py-3 rounded-full glass-heavy">
+            <span className="w-4 h-4 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+            <span className="text-sm text-text-secondary">Computing layout…</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
