@@ -511,6 +511,27 @@ class DualPlayerEngine @Inject constructor(
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             lastMediaItemTransitionAtMs = SystemClock.elapsedRealtime()
             cancelAudioOffloadFallback()
+
+            // Restore audio offload preference for the new track if it was previously disabled due to a transient stall
+            val defaultOffload = !shouldDisableAudioOffloadByDefault()
+            if (audioOffloadEnabled != defaultOffload) {
+                audioOffloadEnabled = defaultOffload
+                if (::playerA.isInitialized) {
+                    val offloadPreferences = TrackSelectionParameters.AudioOffloadPreferences.Builder()
+                        .setAudioOffloadMode(
+                            if (audioOffloadEnabled) {
+                                TrackSelectionParameters.AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_ENABLED
+                            } else {
+                                TrackSelectionParameters.AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_DISABLED
+                            }
+                        )
+                        .build()
+                    playerA.trackSelectionParameters = playerA.trackSelectionParameters.buildUpon()
+                        .setAudioOffloadPreferences(offloadPreferences)
+                        .build()
+                }
+                Timber.tag("DualPlayerEngine").d("Restored audio offload preference for new track (enabled=%b)", audioOffloadEnabled)
+            }
             AdvancedPerformanceDiagnostics.recordEventIfEnabled(
                 type = AdvancedPerformanceDiagnostics.EventTypes.PLAYBACK,
                 name = "media_item_transition",
@@ -1048,10 +1069,14 @@ class DualPlayerEngine @Inject constructor(
                     .setEnableFloatOutput(hiFiModeEnabled)
                     .setEnableAudioOutputPlaybackParameters(enableAudioOutputPlaybackParams)
                     .setAudioProcessorChain(
-                        DefaultAudioSink.DefaultAudioProcessorChain(
-                            HiResSampleRateCapAudioProcessor(),
-                            SurroundDownmixProcessor()
-                        )
+                        if (hiFiModeEnabled) {
+                            DefaultAudioSink.DefaultAudioProcessorChain(
+                                HiResSampleRateCapAudioProcessor(),
+                                SurroundDownmixProcessor()
+                            )
+                        } else {
+                            DefaultAudioSink.DefaultAudioProcessorChain()
+                        }
                     )
                     .build()
             }
