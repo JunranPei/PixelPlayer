@@ -183,6 +183,8 @@
     <string name="settings_smooth_corners_subtitle">使用复杂的圆角形状以有效提升美观度，但可能会影响低端设备的性能</string>
     <string name="settings_disable_blur_all_over_title">关闭模糊效果</string>
     <string name="settings_disable_blur_all_over_subtitle">在应用中关闭模糊效果以节省电量和资源。</string>
+    <string name="settings_disable_wavy_slider_title">关闭波浪进度条</string>
+    <string name="settings_disable_wavy_slider_subtitle">使用传统的直进度条，以节省电量并降低功耗。</string>
     <string name="settings_show_scrollbar_title">显示滚动条</string>
     <string name="settings_show_scrollbar_subtitle">在音乐列表中显示侧边滚动条，便于快速滚动。</string>
     <string name="settings_now_playing_section">正在播放</string>

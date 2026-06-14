@@ -605,6 +605,13 @@ fun SettingsCategoryScreen(
                                     onCheckedChange = { settingsViewModel.setShowPlayerFileInfo(it) },
                                     leadingIcon = { Icon(painterResource(R.drawable.rounded_attach_file_24), null, tint = MaterialTheme.colorScheme.secondary) }
                                 )
+                                SwitchSettingItem(
+                                    title = stringResource(R.string.settings_disable_wavy_slider_title),
+                                    subtitle = stringResource(R.string.settings_disable_wavy_slider_subtitle),
+                                    checked = uiState.disableWavySlider,
+                                    onCheckedChange = { settingsViewModel.setDisableWavySlider(it) },
+                                    leadingIcon = { Icon(Icons.Rounded.MusicNote, null, tint = MaterialTheme.colorScheme.secondary) }
+                                )
                                 SettingsItem(
                                     title = stringResource(R.string.settings_album_art_palette_title),
                                     subtitle = stringResource(R.string.settings_album_art_palette_subtitle, uiState.albumArtPaletteStyle.label),

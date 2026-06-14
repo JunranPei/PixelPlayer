@@ -1214,17 +1214,6 @@ fun BubblesLine(
 ) {
     val position by positionFlow.collectAsStateWithLifecycle(initialValue = 0L)
     val isCurrent = position in time until nextTime
-    val transition = rememberInfiniteTransition(label = "bubbles_transition")
-
-    // Animación ralentizada para apreciar mejor el efecto.
-    val animatedValue by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 3500, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ), label = "bubble_animation_progress"
-    )
 
     var show by remember { mutableStateOf(false) }
     LaunchedEffect(isCurrent) {
@@ -1232,6 +1221,17 @@ fun BubblesLine(
     }
 
     if (show) {
+        val transition = rememberInfiniteTransition(label = "bubbles_transition")
+
+        // Animación ralentizada para apreciar mejor el efecto.
+        val animatedValue by transition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 3500, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ), label = "bubble_animation_progress"
+        )
         val density = LocalDensity.current
         // Smaller circles to accentuate the scale animation.
         val bubbleRadius = remember(density) { with(density) { 4.dp.toPx() } }

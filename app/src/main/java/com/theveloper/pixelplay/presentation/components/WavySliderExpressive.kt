@@ -38,6 +38,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
@@ -79,7 +80,8 @@ fun WavySliderExpressive(
     waveAmplitudeWhenPlaying: Dp = 4.dp,
     thumbLineHeightWhenInteracting: Dp = 24.dp,
     semanticsLabel: String? = null,
-    semanticsProgressStep: Float = 0.01f
+    semanticsProgressStep: Float = 0.01f,
+    disableWavySlider: Boolean = false
 ) {
     val density = LocalDensity.current
     val strokeWidthPx = with(density) { strokeWidth.toPx() }
@@ -211,6 +213,7 @@ fun WavySliderExpressive(
         modifier = modifier
             .fillMaxWidth()
             .height(containerHeight)
+            .graphicsLayer() // Layer isolation for the entire slider hierarchy
             .clearAndSetSemantics {
                 if (!semanticsLabel.isNullOrBlank()) {
                     contentDescription = semanticsLabel
@@ -232,12 +235,13 @@ fun WavySliderExpressive(
             },
         contentAlignment = Alignment.Center
     ) {
-        if (isVisible) {
+        if (isVisible && !disableWavySlider) {
             LinearWavyProgressIndicator(
                 progress = { renderedNormalizedProgress.floatValue },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = trackEdgePadding.coerceAtLeast(0.dp))
+                    .graphicsLayer() // Layer isolation for progress indicator
                     // Decorative layer: avoid duplicate semantics updates from the visual track.
                     .clearAndSetSemantics { },
                 color = activeTrackColor,
@@ -250,18 +254,20 @@ fun WavySliderExpressive(
                 wavelength = wavelength,
                 waveSpeed = waveSpeed
             )
+        } else if (isVisible && disableWavySlider) {
+            // Straight line mode, we draw the tracks in the Canvas below
         } else {
             Spacer(modifier = Modifier.fillMaxWidth().height(containerHeight))
         }
 
 
-        Canvas(modifier = Modifier.fillMaxSize()) {
+        Canvas(modifier = Modifier.fillMaxSize().graphicsLayer()) {
             if (!isVisible) return@Canvas
             val edgePaddingPx = trackEdgePaddingPx.coerceIn(0f, size.width / 2f)
             val trackStart = edgePaddingPx
             val trackEnd = size.width - edgePaddingPx
             val trackWidth = (trackEnd - trackStart).coerceAtLeast(0f)
-            val thumbY = size.height / 2
+            val thumbY = size.height / 2f
             val renderedProgress = renderedNormalizedProgress.floatValue
 
             fun lerp(start: Float, stop: Float, fraction: Float): Float {
@@ -274,6 +280,32 @@ fun WavySliderExpressive(
             val minThumbCenter = (currentWidth / 2f).coerceAtMost(size.width / 2f)
             val maxThumbCenter = (size.width - currentWidth / 2f).coerceAtLeast(minThumbCenter)
             val thumbX = rawThumbX.coerceIn(minThumbCenter, maxThumbCenter)
+
+            if (disableWavySlider) {
+                val gap = dynamicGapSize.value.toPx()
+                // Active Track
+                val activeEnd = thumbX - gap
+                if (activeEnd > trackStart) {
+                    drawLine(
+                        color = activeTrackColor,
+                        start = Offset(trackStart, thumbY),
+                        end = Offset(activeEnd, thumbY),
+                        strokeWidth = strokeWidthPx,
+                        cap = StrokeCap.Round
+                    )
+                }
+                // Inactive Track
+                val inactiveStart = thumbX + gap
+                if (trackEnd > inactiveStart) {
+                    drawLine(
+                        color = inactiveTrackColor,
+                        start = Offset(inactiveStart, thumbY),
+                        end = Offset(trackEnd, thumbY),
+                        strokeWidth = strokeWidthPx,
+                        cap = StrokeCap.Round
+                    )
+                }
+            }
             
             drawRoundRect(
                 color = thumbColor,

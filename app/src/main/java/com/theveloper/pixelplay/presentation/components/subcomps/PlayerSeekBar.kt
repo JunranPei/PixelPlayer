@@ -36,6 +36,11 @@ import androidx.compose.ui.unit.sp
 import com.theveloper.pixelplay.presentation.components.WavySliderExpressive
 import com.theveloper.pixelplay.utils.formatDuration
 import kotlin.math.roundToLong
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import com.theveloper.pixelplay.data.preferences.dataStore
+import kotlinx.coroutines.flow.map
 
 @Composable
 fun PlayerSeekBar(
@@ -50,6 +55,11 @@ fun PlayerSeekBar(
     modifier: Modifier = Modifier
 ) {
     val hapticFeedback = LocalHapticFeedback.current
+    val context = LocalContext.current
+    val disableWavySliderFlow = remember(context) {
+        context.dataStore.data.map { it[booleanPreferencesKey("disable_wavy_slider")] ?: false }
+    }
+    val disableWavySlider by disableWavySliderFlow.collectAsStateWithLifecycle(initialValue = false)
     val progressFraction = remember(currentPosition, totalDuration) {
         if (totalDuration > 0) {
             (currentPosition.toFloat() / totalDuration.toFloat()).coerceIn(0f, 1f)
@@ -129,7 +139,8 @@ fun PlayerSeekBar(
             thumbColor = primaryColor,
             wavelength = 30.dp, // Was waveLength
             isPlaying = isPlaying,
-            semanticsLabel = "Playback position"
+            semanticsLabel = "Playback position",
+            disableWavySlider = disableWavySlider
         )
 //        Text(
 //            modifier = Modifier.weight(0.2f),

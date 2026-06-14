@@ -217,6 +217,7 @@ fun UnifiedPlayerSheetV2(
     val tapBackgroundClosesPlayer = playerConfig.tapBackgroundClosesPlayer
     val useSmoothCorners = playerConfig.useSmoothCorners
     val playerThemePreference = playerConfig.playerThemePreference
+    val disableWavySlider = playerConfig.disableWavySlider
 
     val density = LocalDensity.current
     val configuration = LocalConfiguration.current
@@ -772,7 +773,8 @@ fun UnifiedPlayerSheetV2(
                             onQueueDragStart = sheetActionHandlers.beginQueueDrag,
                             onQueueDrag = sheetActionHandlers.dragQueueBy,
                             onQueueRelease = sheetActionHandlers.endQueueDrag,
-                            onShowCastClicked = castSheetState.openCastSheet
+                            onShowCastClicked = castSheetState.openCastSheet,
+                            disableWavySlider = disableWavySlider
                         )
                     }
                 }
@@ -793,7 +795,8 @@ fun UnifiedPlayerSheetV2(
                     onShowQueueClicked = sheetActionHandlers.openQueueSheet,
                     onQueueDragStart = sheetActionHandlers.beginQueueDrag,
                     onQueueDrag = sheetActionHandlers.dragQueueBy,
-                    onQueueRelease = sheetActionHandlers.endQueueDrag
+                    onQueueRelease = sheetActionHandlers.endQueueDrag,
+                    disableWavySlider = disableWavySlider
                 )
             }
 

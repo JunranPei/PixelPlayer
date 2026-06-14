@@ -97,6 +97,7 @@ data class SettingsUiState(
     val animatedLyricsBlurEnabled: Boolean = true,
     val animatedLyricsBlurStrength: Float = 2.5f,
     val disableBlurAllOver: Boolean = false,
+    val disableWavySlider: Boolean = false,
     val backupInfoDismissed: Boolean = false,
     val isDataTransferInProgress: Boolean = false,
     val restorePlan: RestorePlan? = null,
@@ -170,7 +171,8 @@ private sealed interface SettingsUiUpdate {
         val animatedLyricsBlurEnabled: Boolean,
         val animatedLyricsBlurStrength: Float,
         val disableBlurAllOver: Boolean,
-        val showScrollbar: Boolean
+        val showScrollbar: Boolean,
+        val disableWavySlider: Boolean
     ) : SettingsUiUpdate
 }
 
@@ -563,7 +565,8 @@ class SettingsViewModel @Inject constructor(
                 userPreferencesRepository.animatedLyricsBlurEnabledFlow,
                 userPreferencesRepository.animatedLyricsBlurStrengthFlow,
                 userPreferencesRepository.disableBlurAllOverFlow,
-                userPreferencesRepository.showScrollbarFlow
+                userPreferencesRepository.showScrollbarFlow,
+                userPreferencesRepository.disableWavySliderFlow
             ) { values ->
                 SettingsUiUpdate.Group2(
                     keepPlayingInBackground = values[0] as Boolean,
@@ -584,7 +587,8 @@ class SettingsViewModel @Inject constructor(
                     animatedLyricsBlurEnabled = values[15] as Boolean,
                     animatedLyricsBlurStrength = values[16] as Float,
                     disableBlurAllOver = values[17] as Boolean,
-                    showScrollbar = values[18] as Boolean
+                    showScrollbar = values[18] as Boolean,
+                    disableWavySlider = values[19] as Boolean
                 )
             }.collect { update ->
                 _uiState.update { state ->
@@ -607,7 +611,8 @@ class SettingsViewModel @Inject constructor(
                         animatedLyricsBlurEnabled = update.animatedLyricsBlurEnabled,
                         animatedLyricsBlurStrength = update.animatedLyricsBlurStrength,
                         disableBlurAllOver = update.disableBlurAllOver,
-                        showScrollbar = update.showScrollbar
+                        showScrollbar = update.showScrollbar,
+                        disableWavySlider = update.disableWavySlider
                     )
                 }
             }
@@ -1010,6 +1015,12 @@ class SettingsViewModel @Inject constructor(
     fun setDisableBlurAllOver(disabled: Boolean) {
         viewModelScope.launch {
             userPreferencesRepository.setDisableBlurAllOver(disabled)
+        }
+    }
+
+    fun setDisableWavySlider(disabled: Boolean) {
+        viewModelScope.launch {
+            userPreferencesRepository.setDisableWavySlider(disabled)
         }
     }
 

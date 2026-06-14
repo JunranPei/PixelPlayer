@@ -228,7 +228,8 @@ fun FullPlayerContent(
     onShowCastClicked: () -> Unit,
     onShuffleToggle: () -> Unit,
     onRepeatToggle: () -> Unit,
-    onFavoriteToggle: () -> Unit
+    onFavoriteToggle: () -> Unit,
+    disableWavySlider: Boolean = false
 ) {
     var retainedSong by remember { mutableStateOf(currentSong) }
     LaunchedEffect(currentSong?.id) {
@@ -539,7 +540,8 @@ fun FullPlayerContent(
             playerOnBaseColor = playerOnBaseColor,
             allowRealtimeUpdates = allowRealtimeUpdates,
             isSheetDragGestureActive = isSheetDragGestureActive,
-            loadingTweaks = loadingTweaks
+            loadingTweaks = loadingTweaks,
+            disableWavySlider = disableWavySlider
         )
     }
 
@@ -1210,7 +1212,8 @@ private fun FullPlayerProgressSection(
     playerOnBaseColor: Color,
     allowRealtimeUpdates: Boolean,
     isSheetDragGestureActive: Boolean,
-    loadingTweaks: FullPlayerLoadingTweaks
+    loadingTweaks: FullPlayerLoadingTweaks,
+    disableWavySlider: Boolean = false
 ) {
     val isMetadataForCurrentSong = playbackMetadataMediaId == song.id
     val audioMimeType = if (isMetadataForCurrentSong) {
@@ -1248,7 +1251,8 @@ private fun FullPlayerProgressSection(
         timeTextColor = playerOnBaseColor,
         allowRealtimeUpdates = allowRealtimeUpdates,
         isSheetDragGestureActive = isSheetDragGestureActive,
-        loadingTweaks = loadingTweaks
+        loadingTweaks = loadingTweaks,
+        disableWavySlider = disableWavySlider
     )
 }
 
@@ -1646,7 +1650,8 @@ private fun PlayerProgressBarSection(
     allowRealtimeUpdates: Boolean = true,
     isSheetDragGestureActive: Boolean = false,
     loadingTweaks: FullPlayerLoadingTweaks? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    disableWavySlider: Boolean = false
 ) {
     val progressSectionHorizontalInset = 0.dp
     val isVisible by remember(expansionFractionProvider) {
@@ -1829,7 +1834,8 @@ private fun PlayerProgressBarSection(
                     interactionSource = interactionSource,
                     isPlaying = shouldAnimateWavyProgress,
                     isVisible = isVisible,
-                    trackEdgePadding = progressSectionHorizontalInset
+                    trackEdgePadding = progressSectionHorizontalInset,
+                    disableWavySlider = disableWavySlider
                 )
             }
 
@@ -1857,7 +1863,8 @@ private fun EfficientSlider(
     interactionSource: MutableInteractionSource,
     isPlaying: Boolean,
     isVisible: Boolean,
-    trackEdgePadding: Dp
+    trackEdgePadding: Dp,
+    disableWavySlider: Boolean
 ) {
     val haptics = LocalHapticFeedback.current
     val currentOnValueChange = rememberUpdatedState(onValueChange)
@@ -1886,6 +1893,7 @@ private fun EfficientSlider(
         isVisible = isVisible,
         trackEdgePadding = trackEdgePadding,
         semanticsLabel = "Playback position",
+        disableWavySlider = disableWavySlider,
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp, horizontal = 0.dp)

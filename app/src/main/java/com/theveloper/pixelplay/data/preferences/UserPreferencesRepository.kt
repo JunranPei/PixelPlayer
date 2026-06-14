@@ -245,6 +245,7 @@ class UserPreferencesRepository @Inject constructor(
         val REPLAYGAIN_ENABLED = booleanPreferencesKey("replaygain_enabled")
         val REPLAYGAIN_USE_ALBUM_GAIN = booleanPreferencesKey("replaygain_use_album_gain")
         val SHOW_SCROLLBAR = booleanPreferencesKey("show_scrollbar")
+        val DISABLE_WAVY_SLIDER = booleanPreferencesKey("disable_wavy_slider")
     }
 
     // ─── Private helpers ─────────────────────────────────────────────────────
@@ -1146,6 +1147,17 @@ suspend fun markDirectoryRulesVersionApplied(version: Int) {
     suspend fun setDisableBlurAllOver(disabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.DISABLE_BLUR_ALL_OVER] = disabled
+        }
+    }
+
+    val disableWavySliderFlow: Flow<Boolean> = dataStore.data
+        .map { preferences ->
+            preferences[PreferencesKeys.DISABLE_WAVY_SLIDER] ?: false
+        }
+
+    suspend fun setDisableWavySlider(disabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.DISABLE_WAVY_SLIDER] = disabled
         }
     }
 
