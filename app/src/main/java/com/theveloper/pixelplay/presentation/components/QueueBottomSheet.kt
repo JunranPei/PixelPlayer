@@ -311,6 +311,11 @@ fun QueueBottomSheet(
     }
 
     val listState = rememberLazyListState()
+    val isCurrentSongVisible by remember(listState, currentSongDisplayIndex) {
+        derivedStateOf {
+            listState.layoutInfo.visibleItemsInfo.any { it.index == currentSongDisplayIndex }
+        }
+    }
     val queueCoroutineScope = rememberCoroutineScope()
     val displaySongCount = displaySongs.size
 
@@ -882,7 +887,7 @@ fun QueueBottomSheet(
                                         onClick = { onPlaySong(song, queueIndex) },
                                         song = song,
                                         isCurrentSong = index == currentSongDisplayIndex,
-                                        isPlaying = isPlaying && isVisible,
+                                        isPlaying = isPlaying && isVisible && isCurrentSongVisible,
                                         isDragging = isDragging,
                                         onRemoveClick = { onRemoveSong(song.id) },
                                         isReorderModeEnabled = false,

@@ -70,7 +70,7 @@ fun PlayingEqIcon(
 
     // 关键：在 Canvas 的 modifier 上应用 .graphicsLayer() 产生独立的硬件绘制图层（RenderNode）
     // 这能在高频重绘时进行层隔离，彻底防止 Canvas 的 invalidate 向上级和 parent 传导，大幅降低能耗。
-    Canvas(modifier = modifier.graphicsLayer()) {
+    Canvas(modifier = modifier.graphicsLayer { clip = true }) {
         // 关键：当处于非播放状态时，直接使用静态值，绝对不访问 phaseState.value 和 wanderState.value！
         // 从而断开 Compose 对它们的读取追踪，这样当它们在后台继续循环时，本 Canvas 绝对不会触发重绘。
         val phase = if (isPlaying) phaseState.value else 0f

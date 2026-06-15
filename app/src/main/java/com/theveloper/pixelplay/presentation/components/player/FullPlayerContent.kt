@@ -198,6 +198,7 @@ fun FullPlayerContent(
     shuffleTransitionInProgress: Boolean,
     repeatMode: Int,
     allowRealtimeUpdates: Boolean = true,
+    isOccluded: Boolean = false,
     expansionFractionProvider: () -> Float,
     currentSheetState: PlayerSheetState,
     carouselStyle: String,
@@ -541,7 +542,8 @@ fun FullPlayerContent(
             allowRealtimeUpdates = allowRealtimeUpdates,
             isSheetDragGestureActive = isSheetDragGestureActive,
             loadingTweaks = loadingTweaks,
-            disableWavySlider = disableWavySlider
+            disableWavySlider = disableWavySlider,
+            isOccluded = isOccluded || showLyricsSheet
         )
     }
 
@@ -588,7 +590,8 @@ fun FullPlayerContent(
             chipContentColor = playerAccentColor,
             onQueueClick = onSongMetadataQueueClick,
             onArtistClick = onSongMetadataArtistClick,
-            isPlayingProvider = isPlayingProvider
+            isPlayingProvider = isPlayingProvider,
+            isOccluded = isOccluded || showLyricsSheet
         )
     }
 
@@ -611,7 +614,8 @@ fun FullPlayerContent(
             chipContentColor = playerAccentColor,
             onQueueClick = onSongMetadataQueueClick,
             onArtistClick = onSongMetadataArtistClick,
-            isPlayingProvider = isPlayingProvider
+            isPlayingProvider = isPlayingProvider,
+            isOccluded = isOccluded || showLyricsSheet
         )
     }
 
@@ -1213,7 +1217,8 @@ private fun FullPlayerProgressSection(
     allowRealtimeUpdates: Boolean,
     isSheetDragGestureActive: Boolean,
     loadingTweaks: FullPlayerLoadingTweaks,
-    disableWavySlider: Boolean = false
+    disableWavySlider: Boolean = false,
+    isOccluded: Boolean = false
 ) {
     val isMetadataForCurrentSong = playbackMetadataMediaId == song.id
     val audioMimeType = if (isMetadataForCurrentSong) {
@@ -1252,7 +1257,8 @@ private fun FullPlayerProgressSection(
         allowRealtimeUpdates = allowRealtimeUpdates,
         isSheetDragGestureActive = isSheetDragGestureActive,
         loadingTweaks = loadingTweaks,
-        disableWavySlider = disableWavySlider
+        disableWavySlider = disableWavySlider,
+        isOccluded = isOccluded
     )
 }
 
@@ -1321,7 +1327,8 @@ private fun FullPlayerSongMetadataSection(
     chipContentColor: Color,
     onQueueClick: () -> Unit,
     onArtistClick: () -> Unit,
-    isPlayingProvider: () -> Boolean = { true }
+    isPlayingProvider: () -> Boolean = { true },
+    isOccluded: Boolean = false
 ) {
     val shouldDelay = loadingTweaks.delayAll || loadingTweaks.delaySongMetadata
 
@@ -1366,7 +1373,8 @@ private fun FullPlayerSongMetadataSection(
             showQueueButton = isLandscape,
             onClickQueue = onQueueClick,
             onClickArtist = onArtistClick,
-            isPlayingProvider = isPlayingProvider
+            isPlayingProvider = isPlayingProvider,
+            isOccluded = isOccluded
         )
     }
 }
@@ -1466,7 +1474,8 @@ private fun SongMetadataDisplaySection(
     onClickQueue: () -> Unit,
     onClickArtist: () -> Unit,
     modifier: Modifier = Modifier,
-    isPlayingProvider: () -> Boolean = { true }
+    isPlayingProvider: () -> Boolean = { true },
+    isOccluded: Boolean = false
 ) {
     Row(
         modifier
@@ -1490,7 +1499,8 @@ private fun SongMetadataDisplaySection(
                 modifier = Modifier
                     .weight(1f)
                     .align(Alignment.CenterVertically),
-                isPlayingProvider = isPlayingProvider
+                isPlayingProvider = isPlayingProvider,
+                isVisible = !isOccluded
             )
         }
         
@@ -1648,14 +1658,15 @@ private fun PlayerProgressBarSection(
     thumbColor: Color,
     timeTextColor: Color,
     allowRealtimeUpdates: Boolean = true,
+    isOccluded: Boolean = false,
     isSheetDragGestureActive: Boolean = false,
     loadingTweaks: FullPlayerLoadingTweaks? = null,
     modifier: Modifier = Modifier,
     disableWavySlider: Boolean = false
 ) {
     val progressSectionHorizontalInset = 0.dp
-    val isVisible by remember(expansionFractionProvider) {
-        derivedStateOf { expansionFractionProvider() > 0.01f }
+    val isVisible by remember(expansionFractionProvider, isOccluded) {
+        derivedStateOf { expansionFractionProvider() > 0.01f && !isOccluded }
     }
     val isExpanded by remember(currentSheetState, expansionFractionProvider) {
         derivedStateOf {
@@ -1663,7 +1674,7 @@ private fun PlayerProgressBarSection(
         }
     }
     val shouldRunRealtimeUpdates = allowRealtimeUpdates && isVisible
-    val shouldSampleProgress = isVisible
+    val shouldSampleProgress = shouldRunRealtimeUpdates
 
     val reportedDuration = totalDurationValue.coerceAtLeast(0L)
     val hintDuration = songDurationHintMs.coerceAtLeast(0L)
@@ -2147,7 +2158,8 @@ private fun PlayerSongInfo(
     playerViewModel: PlayerViewModel,
     onClickArtist: () -> Unit,
     modifier: Modifier = Modifier,
-    isPlayingProvider: () -> Boolean = { true }
+    isPlayingProvider: () -> Boolean = { true },
+    isVisible: Boolean = true
 ) {
     val coroutineScope = rememberCoroutineScope()
     var isNavigatingToArtist by remember { mutableStateOf(false) }
@@ -2188,7 +2200,7 @@ private fun PlayerSongInfo(
             gradientEdgeColor = gradientEdgeColor,
             expansionFractionProvider = expansionFractionProvider,
             modifier = Modifier.fillMaxWidth(),
-            canScroll = isPlayingProvider()
+            canScroll = isPlayingProvider() && isVisible
         )
         Spacer(modifier = Modifier.height(2.dp))
 
@@ -2228,7 +2240,7 @@ private fun PlayerSongInfo(
                     }
                 }
             ),
-            canScroll = isPlayingProvider()
+            canScroll = isPlayingProvider() && isVisible
         )
     }
 }
