@@ -27,6 +27,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.vector.PathNode
@@ -1244,7 +1245,7 @@ fun BubblesLine(
             circleNodes to noteNodes
         }
 
-        Canvas(modifier = modifier.size(64.dp, 48.dp)) {
+        Canvas(modifier = modifier.graphicsLayer().size(64.dp, 48.dp)) {
             val bubbleCount = 3
             val bubbleColor = color.copy(alpha = 0.7f)
 

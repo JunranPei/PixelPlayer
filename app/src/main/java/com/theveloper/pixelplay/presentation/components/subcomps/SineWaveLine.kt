@@ -62,7 +62,7 @@ fun SineWaveLine(
         phase
     }
 
-    Canvas(modifier = modifier) {
+    Canvas(modifier = modifier.graphicsLayer()) {
         val w = size.width
         val h = size.height
         val centerY = h / 2f

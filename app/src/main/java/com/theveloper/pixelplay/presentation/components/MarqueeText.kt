@@ -134,12 +134,14 @@ fun AutoScrollingText(
                         style = style,
                         textAlign = textAlign,
                         maxLines = 1,
-                        modifier = Modifier.basicMarquee(
-                            iterations = Int.MAX_VALUE,
-                            spacing = MarqueeSpacing(gradientWidth + 6.dp),
-                            velocity = 25.dp,
-                            initialDelayMillis = initialDelayMillis
-                        )
+                        modifier = Modifier
+                            .graphicsLayer()
+                            .basicMarquee(
+                                iterations = Int.MAX_VALUE,
+                                spacing = MarqueeSpacing(gradientWidth + 6.dp),
+                                velocity = 25.dp,
+                                initialDelayMillis = initialDelayMillis
+                            )
                     )
                 }
             } else if (isOverflowing) {
