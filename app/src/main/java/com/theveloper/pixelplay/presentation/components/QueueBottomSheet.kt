@@ -211,10 +211,7 @@ private fun PlayerUiState.toQueueUndoBarProjection(): QueueUndoBarProjection =
 )
 @Composable
 fun QueueBottomSheet(
-    viewModel: PlayerViewModel = hiltViewModel(),
-    playlistViewModel: PlaylistViewModel = hiltViewModel(),
-    settingsViewModel: SettingsViewModel = hiltViewModel(),
-    queue: List<Song>,
+    queue: kotlinx.collections.immutable.ImmutableList<Song>,
     currentQueueSourceName: String,
     currentSongId: String?,
     currentMediaItemIndex: Int = -1,
@@ -255,6 +252,9 @@ fun QueueBottomSheet(
     tonalElevation: Dp = 10.dp,
     shape: RoundedCornerShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
 ) {
+    val viewModel: PlayerViewModel = hiltViewModel()
+    val playlistViewModel: PlaylistViewModel = hiltViewModel()
+    val settingsViewModel: SettingsViewModel = hiltViewModel()
     val colors = MaterialTheme.colorScheme
     var showTimerOptions by rememberSaveable { mutableStateOf(false) }
     var showClearQueueDialog by remember { mutableStateOf(false) }

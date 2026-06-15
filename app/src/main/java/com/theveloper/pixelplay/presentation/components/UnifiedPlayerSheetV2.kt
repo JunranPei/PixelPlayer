@@ -303,13 +303,7 @@ fun UnifiedPlayerSheetV2(
     )
     val shouldRenderFullPlayer = fullPlayerCompositionPolicy.shouldRenderFullPlayer
 
-    // Battery: tell the PlaybackStateHolder when the slider-bearing UI is
-    // actually rendered. When it isn't (mini-player only), the position
-    // ticker drops from 250 ms to 1 s — slider precision isn't needed.
-    DisposableEffect(shouldRenderFullPlayer) {
-        playerViewModel.setSliderUiMounted(shouldRenderFullPlayer)
-        onDispose { playerViewModel.setSliderUiMounted(false) }
-    }
+
 
     suspend fun animatePlayerSheet(
         targetExpanded: Boolean,
@@ -423,6 +417,14 @@ fun UnifiedPlayerSheetV2(
         isPlayerFullyExpanded = isPlayerFullyExpanded
     )
     val showQueueSheet = queueSheetState.showQueueSheet
+
+    // Battery: tell the PlaybackStateHolder when the slider-bearing UI is
+    // actually rendered. When it isn't (mini-player only or covered by Queue sheet),
+    // the position ticker drops from 250 ms to 1 s — slider precision isn't needed.
+    DisposableEffect(shouldRenderFullPlayer, showQueueSheet) {
+        playerViewModel.setSliderUiMounted(shouldRenderFullPlayer && !showQueueSheet)
+        onDispose { playerViewModel.setSliderUiMounted(false) }
+    }
     val allowQueueSheetInteraction = queueSheetState.allowQueueSheetInteraction
     val queueSheetOffset = queueSheetState.queueSheetOffset
     val queueSheetHeightPx = queueSheetState.queueSheetHeightPx
