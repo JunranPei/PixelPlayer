@@ -740,7 +740,7 @@ fun PlaylistDetailScreen(
                                         },
                                         song = song,
                                         isCurrentSong = playerStableState.currentSong?.id == song.id,
-                                        isPlaying = playerStableState.isPlaying,
+                                        isPlayingProvider = { playerStableState.isPlaying },
                                         isDragging = isDragging,
                                         onRemoveClick = {
                                             if (!isFolderPlaylist) {

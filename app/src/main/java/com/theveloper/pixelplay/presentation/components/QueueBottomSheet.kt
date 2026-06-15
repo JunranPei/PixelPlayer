@@ -887,7 +887,7 @@ fun QueueBottomSheet(
                                         onClick = { onPlaySong(song, queueIndex) },
                                         song = song,
                                         isCurrentSong = index == currentSongDisplayIndex,
-                                        isPlaying = isPlaying && isVisible && isCurrentSongVisible,
+                                        isPlayingProvider = { isPlaying && isVisible && isCurrentSongVisible },
                                         isDragging = isDragging,
                                         onRemoveClick = { onRemoveSong(song.id) },
                                         isReorderModeEnabled = false,
@@ -1887,7 +1887,7 @@ fun QueuePlaylistSongItem(
     onClick: () -> Unit,
     song: Song,
     isCurrentSong: Boolean,
-    isPlaying: Boolean? = null,
+    isPlayingProvider: (() -> Boolean)? = null,
     isDragging: Boolean,
     onRemoveClick: () -> Unit,
     dragHandle: @Composable () -> Unit,
@@ -1900,6 +1900,7 @@ fun QueuePlaylistSongItem(
     onDismissSong: () -> Unit = {},
     isFromPlaylist: Boolean
 ) {
+    val isPlaying = isPlayingProvider?.invoke()
     val colors = MaterialTheme.colorScheme
 
     val cornerRadius by animateDpAsState(
