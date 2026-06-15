@@ -158,9 +158,9 @@ fun WavySliderExpressive(
         mutableFloatStateOf(initialNorm)
     }
     var lastProgressUpdateNanos by remember { mutableLongStateOf(0L) }
-    LaunchedEffect(isInteracting, enabled) {
+    LaunchedEffect(isInteracting, enabled, disableWavySlider) {
         snapshotFlow { normalizedValueState.value }.collect { target ->
-            if (!enabled || isInteracting) {
+            if (!enabled || isInteracting || disableWavySlider) {
                 renderedNormalizedProgress.floatValue = target
                 lastProgressUpdateNanos = System.nanoTime()
                 return@collect
