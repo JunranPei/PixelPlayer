@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalDensity
 import kotlin.math.PI
 import kotlin.math.sin
+import com.theveloper.pixelplay.presentation.components.LocalScreenActive
 
 /**
  * Composable que dibuja una línea horizontal con ondulación senoidal.
@@ -45,8 +46,9 @@ fun SineWaveLine(
 ) {
     val density = LocalDensity.current
 
-    // Only allocate an infinite transition when animation is enabled.
-    val currentPhase = if (animate == true) {
+    val isScreenActive = LocalScreenActive.current
+    // Only allocate an infinite transition when animation is enabled and screen is active.
+    val currentPhase = if (animate == true && isScreenActive) {
         val infiniteTransition = rememberInfiniteTransition(label = "SineWaveAnimation")
         val animatedPhase by infiniteTransition.animateFloat(
             initialValue = 0f,

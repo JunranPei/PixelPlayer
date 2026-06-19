@@ -77,6 +77,7 @@ fun AutoScrollingText(
     gradientWidth: Dp = 24.dp,
     canScroll: Boolean = true
 ) {
+    val isScreenActive = LocalScreenActive.current
     SubcomposeLayout(modifier = modifier.clipToBounds()) { constraints ->
         val textPlaceable = subcompose("text") {
             Text(text = text, style = style, maxLines = 1)
@@ -85,7 +86,7 @@ fun AutoScrollingText(
         val isOverflowing = textPlaceable.width > constraints.maxWidth
 
         val content = @Composable {
-            if (isOverflowing && canScroll) {
+            if (isOverflowing && canScroll && isScreenActive) {
                 val initialDelayMillis = 2000
                 val fadeAnimationDuration = 500
 

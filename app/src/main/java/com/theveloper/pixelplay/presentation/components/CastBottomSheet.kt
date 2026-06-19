@@ -1532,16 +1532,22 @@ private fun CastDeviceRow(
     val scallopShape = RoundedStarShape(sides = 8, curve = 0.10, rotation = 0f)
 
     // Animaciones
-    val infiniteRotation = rememberInfiniteTransition(label = "activeDeviceRotation")
-    val rotation by infiniteRotation.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 9000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "deviceRotation"
-    )
+    val isScreenActive = LocalScreenActive.current
+    val rotation = if (isActiveDevice && isScreenActive) {
+        val infiniteRotation = rememberInfiniteTransition(label = "activeDeviceRotation")
+        val animatedRotation by infiniteRotation.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 9000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "deviceRotation"
+        )
+        animatedRotation
+    } else {
+        0f
+    }
     val backgroundScale by animateFloatAsState(
         targetValue = if (isActiveDevice) 1.16f else 1f,
         animationSpec = tween(durationMillis = 450, easing = FastOutSlowInEasing),
@@ -1892,13 +1898,19 @@ private fun ScanningPlaceholderList() {
 
 @Composable
 private fun ScanningIndicator(isActive: Boolean) {
-    val infinite = rememberInfiniteTransition(label = "scanPulse")
-    val pulse by infinite.animateFloat(
-        initialValue = 0.6f,
-        targetValue = 1.2f,
-        animationSpec = infiniteRepeatable(tween(durationMillis = 900, easing = FastOutSlowInEasing)),
-        label = "pulse"
-    )
+    val isScreenActive = LocalScreenActive.current
+    val pulse = if (isActive && isScreenActive) {
+        val infinite = rememberInfiniteTransition(label = "scanPulse")
+        val animatedPulse by infinite.animateFloat(
+            initialValue = 0.6f,
+            targetValue = 1.2f,
+            animationSpec = infiniteRepeatable(tween(durationMillis = 900, easing = FastOutSlowInEasing)),
+            label = "pulse"
+        )
+        animatedPulse
+    } else {
+        0.8f
+    }
     val prim = MaterialTheme.colorScheme.primary
     Box(
         modifier = Modifier
@@ -1909,7 +1921,7 @@ private fun ScanningIndicator(isActive: Boolean) {
         Canvas(modifier = Modifier.size(18.dp)) {
             drawCircle(
                 color = prim,
-                radius = (size.minDimension / 2) * if (isActive) pulse else 0.8f,
+                radius = (size.minDimension / 2) * pulse,
                 alpha = if (isActive) 0.8f else 0.4f
             )
         }

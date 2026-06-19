@@ -138,6 +138,11 @@ import com.theveloper.pixelplay.presentation.viewmodel.PlayerViewModel
 import com.theveloper.pixelplay.ui.theme.PixelPlayTheme
 import com.theveloper.pixelplay.ui.theme.LocalShowScrollbar
 import com.theveloper.pixelplay.utils.CrashHandler
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.currentStateAsState
+import com.theveloper.pixelplay.presentation.components.LocalScreenActive
 import com.theveloper.pixelplay.utils.AppLocaleManager
 import com.theveloper.pixelplay.utils.LogUtils
 import dagger.hilt.android.AndroidEntryPoint
@@ -592,12 +597,30 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        Box(modifier = Modifier.fillMaxSize()) {
-            MainUI(playerViewModel, navController)
+        val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+        val initialCurrentState = lifecycleOwner.lifecycle.currentStateAsState().value
+        var isResumed by remember { mutableStateOf(initialCurrentState.isAtLeast(Lifecycle.State.RESUMED)) }
 
-            // Muestra el LoadingOverlay solo si las condiciones se cumplen Y el delay ha pasado
-            if (canShowLoadingIndicator) {
-                LoadingOverlay(syncProgress)
+        DisposableEffect(lifecycleOwner) {
+            val observer = LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) {
+                    isResumed = true
+                } else if (event == Lifecycle.Event.ON_PAUSE) {
+                    isResumed = false
+                }
+            }
+            lifecycleOwner.lifecycle.addObserver(observer)
+            onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+        }
+
+        CompositionLocalProvider(LocalScreenActive provides isResumed) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                MainUI(playerViewModel, navController)
+
+                // Muestra el LoadingOverlay solo si las condiciones se cumplen Y el delay ha pasado
+                if (canShowLoadingIndicator) {
+                    LoadingOverlay(syncProgress)
+                }
             }
         }
         Trace.endSection() // End MainActivity.MainAppContent

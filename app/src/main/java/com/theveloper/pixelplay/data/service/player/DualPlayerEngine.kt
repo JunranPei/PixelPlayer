@@ -186,17 +186,17 @@ internal data class LoadControlBufferProfile(
 internal fun loadControlBufferProfileFor(isLowRamDevice: Boolean): LoadControlBufferProfile {
     return if (isLowRamDevice) {
         LoadControlBufferProfile(
-            minBufferMs = 15_000,
-            maxBufferMs = 30_000,
+            minBufferMs = 10_000,
+            maxBufferMs = 20_000,
             bufferForPlaybackMs = 1_000,
-            bufferForPlaybackAfterRebufferMs = 5_000
+            bufferForPlaybackAfterRebufferMs = 2_000
         )
     } else {
         LoadControlBufferProfile(
-            minBufferMs = 30_000,
-            maxBufferMs = 60_000,
+            minBufferMs = 15_000,
+            maxBufferMs = 30_000,
             bufferForPlaybackMs = 1_000,
-            bufferForPlaybackAfterRebufferMs = 5_000
+            bufferForPlaybackAfterRebufferMs = 2_000
         )
     }
 }
@@ -1029,20 +1029,20 @@ class DualPlayerEngine @Inject constructor(
         return if (isLowRam) {
             DefaultLoadControl.Builder()
                 .setBufferDurationsMs(
-                    /* minBufferMs                      */ 15_000,
-                    /* maxBufferMs                      */ 30_000,
-                    /* bufferForPlaybackMs              */  2_500,
-                    /* bufferForPlaybackAfterRebufferMs */  5_000
+                    /* minBufferMs                      */ 10_000,
+                    /* maxBufferMs                      */ 20_000,
+                    /* bufferForPlaybackMs              */  1_000,
+                    /* bufferForPlaybackAfterRebufferMs */  2_000
                 )
                 .setPrioritizeTimeOverSizeThresholds(true)
                 .build()
         } else {
             DefaultLoadControl.Builder()
                 .setBufferDurationsMs(
-                    /* minBufferMs                      */ 30_000,
-                    /* maxBufferMs                      */ 60_000,
-                    /* bufferForPlaybackMs              */  2_500,
-                    /* bufferForPlaybackAfterRebufferMs */  5_000
+                    /* minBufferMs                      */ 15_000,
+                    /* maxBufferMs                      */ 30_000,
+                    /* bufferForPlaybackMs              */  1_000,
+                    /* bufferForPlaybackAfterRebufferMs */  2_000
                 )
                 .setPrioritizeTimeOverSizeThresholds(true)
                 .build()

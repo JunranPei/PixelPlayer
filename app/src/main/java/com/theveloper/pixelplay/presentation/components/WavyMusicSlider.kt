@@ -98,8 +98,8 @@ fun WavyMusicSlider(
         label = "ThumbInteractionAnim"
     )
 
-    // La onda sólo si: el track está reproduciendo, no hay interacción y el contexto lo permite
-    val shouldShowWave = isWaveEligible && isPlaying && !isInteracting
+    val isScreenActive = LocalScreenActive.current
+    val shouldShowWave = isWaveEligible && isPlaying && !isInteracting && isScreenActive
 
     val animatedWaveAmplitude by animateDpAsState(
         targetValue = if (shouldShowWave) waveAmplitudeWhenPlaying else 0.dp,

@@ -126,25 +126,31 @@ fun AiPlaylistSheet(
     }
 
     // AI UI Optimization: Infinite transitions for a "living" generative feel
-    val infiniteTransition = rememberInfiniteTransition(label = "ai_animation")
-    val iconRotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(3000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "rotation"
-    )
-    val iconScale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.15f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "scale"
-    )
+    val isScreenActive = LocalScreenActive.current
+    val (iconRotation, iconScale) = if (isScreenActive) {
+        val infiniteTransition = rememberInfiniteTransition(label = "ai_animation")
+        val rotation by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(3000, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "rotation"
+        )
+        val scale by infiniteTransition.animateFloat(
+            initialValue = 1f,
+            targetValue = 1.15f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(800, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "scale"
+        )
+        rotation to scale
+    } else {
+        0f to 1f
+    }
 
     // AI UI Optimization: Bouncy haptic interaction for the generate button
     var isPressed by remember { mutableStateOf(false) }

@@ -18,6 +18,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,6 +39,8 @@ import com.theveloper.pixelplay.presentation.viewmodel.PlayerViewModel
 import com.theveloper.pixelplay.presentation.navigation.isMainRootRoute
 import androidx.lifecycle.compose.currentStateAsState
 
+
+val LocalScreenActive = compositionLocalOf { true }
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -64,6 +68,10 @@ fun ScreenWrapper(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
+
+    val sheetState by playerViewModel.sheetState.collectAsState()
+    val isPlayerExpanded = sheetState == com.theveloper.pixelplay.presentation.viewmodel.PlayerSheetState.EXPANDED
+    val isScreenActive = isResumed && !isPlayerExpanded
 
     // Collect states to subscribe Compose to their updates. Every event that changes the back
     // stack (navigate / pop commit) emits currentBackStackEntry, so reading these here is what
@@ -175,40 +183,42 @@ fun ScreenWrapper(
         fallbackBlurRadius.value.dp
     }
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            // Keep both the graphicsLayer modifier AND its compositingStrategy stable across
-            // the full lifecycle of the screen. Toggling the strategy between Auto and
-            // Offscreen mid-transition (when cornerRadius crosses the threshold) causes the
-            // RenderNode's rendering mode to flip for one frame, producing a subtle flash on
-            // the outgoing screen right as the animation starts. Main root tab switches are
-            // the exception: Home/Search/Library keep the same slide/fade transition, but skip
-            // the expensive offscreen depth layer while no deeper screen is visible.
-            .graphicsLayer {
-                compositingStrategy = if (shouldRunDepthEffects) {
-                    CompositingStrategy.Offscreen
-                } else {
-                    CompositingStrategy.Auto
-                }
-                if (shouldRunDepthEffects && animatedCornerRadius > 0.5f) {
-                    this.shape = RoundedCornerShape(animatedCornerRadius.dp)
-                    this.clip = true
-                } else {
-                    this.clip = false
-                }
-            }
-            .blur(radius = if (shouldRunDepthEffects) animatedBlurRadius else 0.dp)
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        content()
-
-        // Dim Layer Overlay
+    androidx.compose.runtime.CompositionLocalProvider(LocalScreenActive provides isScreenActive) {
         Box(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxSize()
-                .graphicsLayer { alpha = animatedDimAlpha }
-                .background(Color.Black)
-        )
+                // Keep both the graphicsLayer modifier AND its compositingStrategy stable across
+                // the full lifecycle of the screen. Toggling the strategy between Auto and
+                // Offscreen mid-transition (when cornerRadius crosses the threshold) causes the
+                // RenderNode's rendering mode to flip for one frame, producing a subtle flash on
+                // the outgoing screen right as the animation starts. Main root tab switches are
+                // the exception: Home/Search/Library keep the same slide/fade transition, but skip
+                // the expensive offscreen depth layer while no deeper screen is visible.
+                .graphicsLayer {
+                    compositingStrategy = if (shouldRunDepthEffects) {
+                        CompositingStrategy.Offscreen
+                    } else {
+                        CompositingStrategy.Auto
+                    }
+                    if (shouldRunDepthEffects && animatedCornerRadius > 0.5f) {
+                        this.shape = RoundedCornerShape(animatedCornerRadius.dp)
+                        this.clip = true
+                    } else {
+                        this.clip = false
+                    }
+                }
+                .blur(radius = if (shouldRunDepthEffects) animatedBlurRadius else 0.dp)
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            content()
+
+            // Dim Layer Overlay
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = animatedDimAlpha }
+                    .background(Color.Black)
+            )
+        }
     }
 }

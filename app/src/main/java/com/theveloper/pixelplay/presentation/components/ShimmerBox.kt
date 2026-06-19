@@ -24,21 +24,29 @@ fun ShimmerBox(modifier: Modifier = Modifier) {
         baseColor,
     )
 
-    val transition = rememberInfiniteTransition(label = "shimmer")
-    val translateAnim = transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1000f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1000, delayMillis = 200),
-        ),
-        label = "shimmerTranslate"
-    )
-
-    val brush = Brush.linearGradient(
-        colors = shimmerColors,
-        start = Offset.Zero,
-        end = Offset(x = translateAnim.value, y = translateAnim.value)
-    )
+    val isScreenActive = LocalScreenActive.current
+    val brush = if (isScreenActive) {
+        val transition = rememberInfiniteTransition(label = "shimmer")
+        val translateAnim = transition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1000f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1000, delayMillis = 200),
+            ),
+            label = "shimmerTranslate"
+        )
+        Brush.linearGradient(
+            colors = shimmerColors,
+            start = Offset.Zero,
+            end = Offset(x = translateAnim.value, y = translateAnim.value)
+        )
+    } else {
+        Brush.linearGradient(
+            colors = listOf(baseColor, baseColor),
+            start = Offset.Zero,
+            end = Offset.Zero
+        )
+    }
 
     Box(
         modifier = modifier.background(brush = brush)

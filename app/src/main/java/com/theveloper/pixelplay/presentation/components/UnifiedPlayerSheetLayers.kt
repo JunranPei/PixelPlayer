@@ -40,6 +40,8 @@ import com.theveloper.pixelplay.presentation.viewmodel.PlayerSheetState
 import com.theveloper.pixelplay.presentation.viewmodel.PlayerViewModel
 import com.theveloper.pixelplay.presentation.viewmodel.StablePlayerState
 
+import com.theveloper.pixelplay.presentation.components.LocalScreenActive
+
 @OptIn(UnstableApi::class)
 @Composable
 internal fun BoxScope.UnifiedPlayerMiniAndFullLayers(
@@ -74,8 +76,11 @@ internal fun BoxScope.UnifiedPlayerMiniAndFullLayers(
 ) {
     currentSong?.let { currentSongNonNull ->
         miniPlayerScheme?.let { readyScheme ->
+            val isResumed = LocalScreenActive.current
+            val isMiniPlayerActive = isResumed && playerContentExpansionFraction.value < 0.05f
             CompositionLocalProvider(
-                LocalMaterialTheme provides readyScheme
+                LocalMaterialTheme provides readyScheme,
+                LocalScreenActive provides isMiniPlayerActive
             ) {
                 val miniPlayerZIndex by remember {
                     derivedStateOf {
@@ -135,8 +140,11 @@ internal fun BoxScope.UnifiedPlayerMiniAndFullLayers(
         }
 
         if (shouldRenderFullPlayer) {
+            val isResumed = LocalScreenActive.current
+            val isFullPlayerActive = isResumed && playerContentExpansionFraction.value > 0.05f
             CompositionLocalProvider(
-                LocalMaterialTheme provides albumColorScheme
+                LocalMaterialTheme provides albumColorScheme,
+                LocalScreenActive provides isFullPlayerActive
             ) {
                 val fullPlayerScale by remember(bottomSheetOpenFraction) {
                     // Keep the depth effect, but avoid aggressive full-screen rescaling on every frame.
@@ -293,7 +301,8 @@ internal fun UnifiedPlayerPrewarmLayer(
         val currentPlaybackQueue by playerViewModel.queueFlow
             .collectAsStateWithLifecycle()
         CompositionLocalProvider(
-            LocalMaterialTheme provides albumColorScheme
+            LocalMaterialTheme provides albumColorScheme,
+            LocalScreenActive provides false
         ) {
             Box(
                 modifier = Modifier

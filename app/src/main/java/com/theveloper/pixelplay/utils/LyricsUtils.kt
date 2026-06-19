@@ -9,6 +9,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size
+import com.theveloper.pixelplay.presentation.components.LocalScreenActive
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -1221,7 +1222,8 @@ fun BubblesLine(
         show = isCurrent
     }
 
-    if (show) {
+    val isScreenActive = LocalScreenActive.current
+    if (show && isScreenActive) {
         val transition = rememberInfiniteTransition(label = "bubbles_transition")
 
         // Animación ralentizada para apreciar mejor el efecto.

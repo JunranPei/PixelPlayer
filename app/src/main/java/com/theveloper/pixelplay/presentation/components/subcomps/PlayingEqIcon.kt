@@ -20,6 +20,7 @@ import kotlin.math.PI
 import kotlin.math.sin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import com.theveloper.pixelplay.presentation.components.LocalScreenActive
 
 @Composable
 fun PlayingEqIcon(
@@ -33,20 +34,23 @@ fun PlayingEqIcon(
     wanderDurationMillis: Int = 12000,
     gapFraction: Float = 0.30f
 ) {
+    val isScreenActive = LocalScreenActive.current
+    val effectiveIsPlaying = isPlaying && isScreenActive
+
     // 状态从暂停变播放或播放变暂停时的平滑动画（1 -> 0）
     val activity by animateFloatAsState(
-        targetValue = if (isPlaying) 1f else 0f,
+        targetValue = if (effectiveIsPlaying) 1f else 0f,
         animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
         label = "activity"
     )
 
     // 极致优化：一旦 isPlaying 变为 false，我们立刻切换到静态版，彻底且即时销毁 rememberInfiniteTransition，
     // 释放系统动画时钟（withFrameNanos）的注册，允许设备降低屏幕刷新率并进入省电状态。
-    if (isPlaying) {
+    if (effectiveIsPlaying) {
         PlayingEqIconAnimated(
             modifier = modifier,
             color = color,
-            isPlaying = isPlaying,
+            isPlaying = effectiveIsPlaying,
             bars = bars,
             minHeightFraction = minHeightFraction,
             maxHeightFraction = maxHeightFraction,
